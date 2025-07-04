@@ -1,21 +1,37 @@
 
 [versions]
-kotlin-version = "2.1.10"
+kotlin-version = "2.2.0"
 ktor-version = "3.2.0"
-logback-version = "1.5.13"
+logback-version = "1.5.18"
 ktlint-version = "12.3.0"
-detekt-version = "1.23.7"
+detekt-version = "1.23.8"
+kotlin-serialization = "1.8.1"
+koin-version = "4.1.0"
+wire-sdk-version = "0.0.12"
+redis-version = "6.7.1.RELEASE"
+mustache-version = "0.9.14"
+mockk-version = "1.14.3"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin-version" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-version" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt-version" }
 
 [libraries]
 ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
 ktor-server-netty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor-version" }
-logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
-ktor-server-config-yaml = { module = "io.ktor:ktor-server-config-yaml", version.ref = "ktor-version" }
 ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor-version" }
+ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
+ktor-server-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
+ktor-server-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor-version" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlin-serialization" }
+koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin-version" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin-version" }
+wire-sdk = { module = "com.wire:wire-apps-jvm-sdk", version.ref = "wire-sdk-version" }
+redis = { module = "io.lettuce:lettuce-core", version.ref = "redis-version" }
+mustache = { module = "com.github.spullara.mustache.java:compiler", version.ref = "mustache-version" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
-
-[plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
-ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-version" }
-detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt-version" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk-version" }
