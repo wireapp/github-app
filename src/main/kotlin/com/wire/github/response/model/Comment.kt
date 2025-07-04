@@ -5,14 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Comment(
-    @SerialName("body")
-    val body: String? = null,
-    @SerialName("user")
-    val user: User? = null,
+    val body: String,
+    val user: User,
     @SerialName("html_url")
-    val htmlUrl: String? = null,
-    @SerialName("id")
-    val id: String? = null,
-    @SerialName("line")
-    val line: Integer? = null
+    val htmlUrl: String,
+    val id: String,
+    val line: Int? = null
 )

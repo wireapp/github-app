@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Repository(
     @SerialName("full_name")
-    val fullName: String? = null,
-    @SerialName("name")
-    val name: String? = null
+    val fullName: String,
+    val name: String
 )

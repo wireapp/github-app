@@ -6,15 +6,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class PullRequest(
     @SerialName("html_url")
-    val htmlUrl: String? = null,
-    @SerialName("title")
-    val title: String? = null,
-    @SerialName("body")
-    val body: String? = null,
-    @SerialName("user")
-    val user: User? = null,
-    @SerialName("merged")
-    val merged: Boolean? = null,
-    @SerialName("number")
-    val number: Int? = null
+    val htmlUrl: String,
+    val title: String,
+    val body: String,
+    val user: User,
+    val merged: Boolean,
+    val number: Int
 )

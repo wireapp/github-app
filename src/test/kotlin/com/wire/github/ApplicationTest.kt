@@ -130,8 +130,21 @@ class ApplicationTest {
             domain = "conv_domain"
         )
         const val DUMMY_EVENT = "pull_request"
-        const val DUMMY_PAYLOAD = "{\"action\": \"created\", \"deleted\": false}"
         const val DUMMY_SIGNATURE = "dummySignature"
         const val DUMMY_TEMPLATE = "dummyTemplate"
+        val DUMMY_PAYLOAD = """
+            {
+                "action": "created",
+                "sender": {
+                    "avatar_url": "dummy_url",
+                    "login": "dummy_login"
+                },
+                "repository": {
+                    "full_name": "dummy_repository_full_name",
+                    "name": "repository_name"
+                },
+                "deleted": false
+            }
+        """.trimIndent()
     }
 }
