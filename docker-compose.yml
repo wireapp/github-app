@@ -1,0 +1,43 @@
+services:
+  app:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: github
+    environment:
+      - GHAPP_API_HOST=${GHAPP_API_HOST}
+      - GHAPP_SERVER_PORT=${GHAPP_SERVER_PORT}
+      - GHAPP_REDIS_HOST=${GHAPP_REDIS_HOST}
+      - GHAPP_REDIS_PORT=${GHAPP_REDIS_PORT}
+      - WIRE_SDK_API_HOST=${WIRE_SDK_API_HOST}
+      - WIRE_SDK_API_TOKEN=${WIRE_SDK_API_TOKEN}
+      - WIRE_SDK_APP_ID=${WIRE_SDK_APP_ID}
+      - WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD=${WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD}
+      - WIRE_SDK_USER_ID=${WIRE_SDK_USER_ID}
+      - WIRE_SDK_EMAIL=${WIRE_SDK_EMAIL}
+      - WIRE_SDK_PASSWORD=${WIRE_SDK_PASSWORD}
+      - WIRE_SDK_CLIENT=${WIRE_SDK_CLIENT}
+      - WIRE_SDK_ENVIRONMENT=${WIRE_SDK_ENVIRONMENT}
+    ports:
+      - "${GHAPP_SERVER_PORT}:${GHAPP_SERVER_PORT}"
+    volumes:
+        - github-app:/app
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    container_name: github_redis
+    environment:
+      - GHAPP_REDIS_PORT=${GHAPP_REDIS_PORT}
+    restart: unless-stopped
+    ports:
+      - "${GHAPP_REDIS_PORT}:${GHAPP_REDIS_PORT}"
+    volumes:
+      - redis-data:/data
+    command: sh -c "redis-server --port $GHAPP_REDIS_PORT --save 60 1 --loglevel warning --appendonly yes"
+
+volumes:
+  redis-data:
+  github-app:

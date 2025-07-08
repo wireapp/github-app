@@ -1,6 +1,6 @@
 /**
  * This file holds and handles environment variables for both:
- * - Github App
+ * - GitHub App
  * - Wire App SDK
  *
  * Although not all environment variables for Wire App SDK are here because some are
@@ -16,8 +16,8 @@ import java.util.UUID
 val ENV_VAR_PORT: Int = System
     .getenv()
     .getOrDefault(
-        "GHAPP_API_PORT",
-        "8080"
+        "GHAPP_SERVER_PORT",
+        "8083"
     ).toInt()
 
 /**
@@ -29,21 +29,32 @@ val ENV_VAR_HOST: String = System
     .getenv()
     .getOrDefault(
         "GHAPP_API_HOST",
-        "http://127.0.0.1"
+        "http://0.0.0.0"
     )
 
 /**
  * Redis Host URL
  * In case it needs a password, must be included in this same environment variable.
  * Examples:
- * - "redis://host[:port]"
- * - "redis://[:password@]host[:port]"
+ * - "redis://host"
+ * - "redis://[:password@]host"
  */
 val ENV_VAR_REDIS_HOST: String = System
     .getenv()
     .getOrDefault(
         "GHAPP_REDIS_HOST",
-        "redis://localhost:6379"
+        "redis://localhost"
+    )
+
+/**
+ * Redis Port Number
+ * To used when connecting and also exposed via docker-compose.
+ */
+val ENV_VAR_REDIS_PORT: String = System
+    .getenv()
+    .getOrDefault(
+        "GHAPP_REDIS_PORT",
+        "6379"
     )
 
 /**

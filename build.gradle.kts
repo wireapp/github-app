@@ -78,15 +78,25 @@ detekt {
     source.setFrom("src/main/kotlin")
 }
 
-/**
- * Dummy environment variables for tests
- */
-tasks.test {
-    environment("GHAPP_API_HOST", "http://127.0.0.1")
-    environment("GHAPP_API_PORT", "8080")
-    environment("GHAPP_REDIS_HOST", "redis://localhost:6379")
-    environment("WIRE_SDK_API_HOST", "https://nginz-https.chala.wire.link")
-    environment("WIRE_SDK_API_TOKEN", "myApiToken")
-    environment("WIRE_SDK_APP_ID", "f562e146-dec2-4d85-93c7-7132746b5cca")
-    environment("WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD", "myDummyPasswordmyDummyPassword01")
+tasks {
+    shadowJar {
+        archiveFileName.set("github-app.jar")
+        manifest {
+            attributes["Main-Class"] = "com.wire.github.ApplicationKt"
+        }
+    }
+
+    /**
+     * Dummy environment variables for tests
+     */
+    test {
+        environment("GHAPP_API_HOST", "http://0.0.0.0")
+        environment("GHAPP_SERVER_PORT", "8083")
+        environment("GHAPP_REDIS_HOST", "redis://localhost")
+        environment("GHAPP_REDIS_PORT", "6379")
+        environment("WIRE_SDK_API_HOST", "https://nginz-https.chala.wire.link")
+        environment("WIRE_SDK_API_TOKEN", "myApiToken")
+        environment("WIRE_SDK_APP_ID", "f562e146-dec2-4d85-93c7-7132746b5cca")
+        environment("WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD", "myDummyPasswordmyDummyPassword01")
+    }
 }
