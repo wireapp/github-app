@@ -18,20 +18,15 @@ class TemplateHandler {
         response: GitHubResponse
     ): String? =
         try {
-            response.deleted?.let { isDeleted ->
-                if (!isDeleted) {
-                    val template = compileTemplate(
-                        event = event,
-                        action = response.action
-                    )
-                    return@let populateTemplate(
-                        mustache = template,
-                        model = response
-                    )
-                } else {
-                    null
-                }
-            }
+            val template = compileTemplate(
+                event = event,
+                action = response.action
+            )
+
+            populateTemplate(
+                mustache = template,
+                model = response
+            )
         } catch (exception: MustacheNotFoundException) {
             logger.error("MustacheNotFoundException: $exception")
             null
@@ -62,15 +57,10 @@ class TemplateHandler {
     private fun populateTemplate(
         mustache: Mustache,
         model: GitHubResponse
-    ): String? {
-        val stringWriter = StringWriter()
-        mustache.execute(
-            PrintWriter(stringWriter),
-            model
-        ).flush()
-
-        return stringWriter.toString()
-    }
+    ): String? =
+        StringWriter().apply {
+            mustache.execute(PrintWriter(this), model).flush()
+        }.toString()
 
     private companion object {
         const val LANGUAGE_ENGLISH = "en"

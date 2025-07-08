@@ -1,6 +1,6 @@
-**[{{repository.full_name}}]** Issue **{{{issue.title}}}** {{action}} by **{{sender.login}}**
+**[{{repository.fullName}}]** Issue **{{{issue.title}}}** {{action}} by **{{sender.login}}**
 
 {{{issue.body}}}
 
-{{issue.html_url}}
+{{issue.htmlUrl}}
 —

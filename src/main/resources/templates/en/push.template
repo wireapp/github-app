@@ -1,5 +1,5 @@
 {{^commits.isEmpty}}
-**[{{repository.full_name}}]** Push by **{{sender.login}}**
+**[{{repository.fullName}}]** Push by **{{sender.login}}**
 
 {{#commits}}
  - {{{message}}}
