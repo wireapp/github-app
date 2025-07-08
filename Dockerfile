@@ -7,7 +7,7 @@ COPY . .
 RUN chmod +x ./gradlew
 RUN ./gradlew shadowJar --no-daemon
 
-# ---------- Stage 2: Runtime ----------
+# Runtime
 FROM ubuntu:24.04
 RUN apt-get update && \
     apt-get install -y openjdk-17-jre-headless && \
