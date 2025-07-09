@@ -1,5 +1,6 @@
 .gradle
 build/
+*.jar
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -36,7 +37,6 @@ out/
 .vscode/
 
 # Package Files #
-*.jar
 *.war
 *.nar
 *.ear
@@ -52,9 +52,6 @@ out/
 
 # Ignore Kotlin specific files
 *.class
-*.jar
-*.war
-*.ear
 *.apk
 *.dex
 *.so
