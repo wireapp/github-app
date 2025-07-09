@@ -1,10 +1,12 @@
 package com.wire.github.response.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class GitHubResponse(
     val action: String? = null,
+    @SerialName("pull_request")
     val pullRequest: PullRequest? = null,
     val comment: Comment? = null,
     val issue: Issue? = null,

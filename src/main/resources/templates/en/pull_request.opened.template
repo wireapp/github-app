@@ -1,6 +1,6 @@
-**[{{repository.full_name}}]** Pull request **{{{pull_request.title}}}** was {{action}} by **{{pull_request.user.login}}**
+**[{{repository.fullName}}]** Pull request **{{{pullRequest.title}}}** was {{action}} by **{{pullRequest.user.login}}**
 
-{{{pull_request.body}}}
+{{{pullRequest.body}}}
 
-[link]({{pull_request.html_url}})
+[link]({{pullRequest.htmlUrl}})
 —

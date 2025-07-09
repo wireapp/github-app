@@ -49,7 +49,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
         conversationId: QualifiedId,
         secret: String? = null
     ): String {
-        val generatedSecret = secret ?: {
+        val generatedSecret = secret ?: run {
             val generated = SessionIdentifierGenerator.generate()
             storage.set(conversationId.toStorageKey(), generated)
             generated
