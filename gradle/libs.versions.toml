@@ -8,7 +8,7 @@ detekt-version = "1.23.8"
 kotlin-serialization = "1.9.0"
 koin-version = "4.1.0"
 wire-sdk-version = "0.0.13"
-redis-version = "6.7.1.RELEASE"
+redis-version = "6.8.1.RELEASE"
 mustache-version = "0.9.14"
 mockk-version = "1.14.5"
 
