@@ -58,9 +58,10 @@ class TemplateHandler {
         mustache: Mustache,
         model: GitHubResponse
     ): String? =
-        StringWriter().apply {
-            mustache.execute(PrintWriter(this), model).flush()
-        }.toString()
+        StringWriter()
+            .apply {
+                mustache.execute(PrintWriter(this), model).flush()
+            }.toString()
 
     private companion object {
         const val LANGUAGE_ENGLISH = "en"

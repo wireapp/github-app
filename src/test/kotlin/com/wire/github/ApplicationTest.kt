@@ -1,6 +1,5 @@
 package com.wire.github
 
-import com.wire.github.config.projectModules
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.integrations.jvm.WireAppSdk
@@ -15,6 +14,9 @@ import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import org.junit.jupiter.api.Assertions.assertEquals
 import io.ktor.client.request.header
+import io.lettuce.core.RedisClient
+import io.lettuce.core.api.StatefulRedisConnection
+import io.lettuce.core.api.sync.RedisCommands
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -29,8 +31,24 @@ import org.koin.dsl.module
 class ApplicationTest {
     @BeforeTest
     fun setupKoin() {
+        val mockRedisClient = mockk<RedisClient>()
+        val mockRedisCommands = mockk<RedisCommands<String, String>>()
+        val mockRedisConnection = mockk<StatefulRedisConnection<String, String>>()
+        val mockWireAppSdk = mockk<WireAppSdk>(relaxed = true)
+
+        // Configure the Redis connection mock to return the sync commands
+        every { mockRedisConnection.sync() } returns mockRedisCommands
+
         startKoin {
-            modules(projectModules)
+            modules(
+                module {
+                    single { SignatureValidator() }
+                    single { TemplateHandler() }
+                    single { mockRedisClient }
+                    single<StatefulRedisConnection<String, String>> { mockRedisConnection }
+                    single { mockWireAppSdk }
+                }
+            )
         }
     }
 
