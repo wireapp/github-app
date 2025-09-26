@@ -3,7 +3,7 @@
 kotlin-version = "2.2.20"
 ktor-version = "3.2.3"
 logback-version = "1.5.18"
-ktlint-version = "13.0.0"
+ktlint-version = "13.1.0"
 detekt-version = "1.23.8"
 kotlin-serialization = "1.9.0"
 koin-version = "4.1.0"
