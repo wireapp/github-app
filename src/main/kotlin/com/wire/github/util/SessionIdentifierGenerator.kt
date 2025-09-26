@@ -10,14 +10,11 @@ object SessionIdentifierGenerator {
 
     private val random: SecureRandom = SecureRandom()
 
-    private fun next(): String {
-        return BigInteger(
+    private fun next(): String =
+        BigInteger(
             BIT_INTEGER_NUM_BITS,
             random
         ).toString(BIT_INTEGER_RADIX)
-    }
 
-    fun generate(length: Int = DEFAULT_GENERATOR_LENGTH): String {
-        return next().substring(0, length)
-    }
+    fun generate(length: Int = DEFAULT_GENERATOR_LENGTH): String = next().substring(0, length)
 }
