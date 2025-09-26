@@ -1,21 +1,13 @@
-# Build
-FROM ubuntu:24.04 AS build
-RUN apt update && apt install -y curl git unzip openjdk-17-jdk
-WORKDIR /app
-COPY . .
+FROM gradle:9.0.0-jdk21 AS build-env
 
-RUN chmod +x ./gradlew
+WORKDIR /app
+COPY . ./
 RUN ./gradlew shadowJar --no-daemon
 
-# Runtime
-FROM ubuntu:24.04
-RUN apt-get update && \
-    apt-get install -y openjdk-17-jre-headless && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+FROM eclipse-temurin:21-jre
 
-WORKDIR /app
-COPY --from=build /app/build/libs/github-app.jar github-app.jar
+COPY --from=build-env /app/build/libs/github-app.jar /opt/github-app/
 
-# Run the app
-CMD ["sh", "-c", "java -Djava.library.path=/usr/lib -jar github-app.jar"]
+WORKDIR /opt/github-app
+
+ENTRYPOINT ["java", "-jar", "github-app.jar"]
