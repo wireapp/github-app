@@ -55,6 +55,7 @@ dependencies {
 
     // Logging
     implementation(libs.logback.classic)
+    implementation(libs.logstash.logback.encoder)
 
     // Test
     testImplementation(libs.ktor.server.test.host)
