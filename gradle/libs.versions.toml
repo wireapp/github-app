@@ -2,7 +2,7 @@
 [versions]
 kotlin-version = "2.2.20"
 ktor-version = "3.3.1"
-logback-version = "1.5.19"
+logback-version = "1.5.20"
 logstash-logback-encoder-version = "8.1"
 ktlint-version = "13.1.0"
 detekt-version = "1.23.8"
