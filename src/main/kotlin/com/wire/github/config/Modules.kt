@@ -9,7 +9,7 @@ import com.wire.github.util.ENV_VAR_REDIS_HOST
 import com.wire.github.util.ENV_VAR_REDIS_PORT
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
-import com.wire.integrations.jvm.WireAppSdk
+import com.wire.sdk.WireAppSdk
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
 import org.koin.dsl.module
