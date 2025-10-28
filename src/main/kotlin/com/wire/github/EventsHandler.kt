@@ -3,11 +3,11 @@ package com.wire.github
 import com.wire.github.util.ENV_VAR_HOST
 import com.wire.github.util.SessionIdentifierGenerator
 import com.wire.github.util.toStorageKey
-import com.wire.integrations.jvm.WireEventsHandlerSuspending
-import com.wire.integrations.jvm.model.ConversationData
-import com.wire.integrations.jvm.model.ConversationMember
-import com.wire.integrations.jvm.model.QualifiedId
-import com.wire.integrations.jvm.model.WireMessage
+import com.wire.sdk.WireEventsHandlerSuspending
+import com.wire.sdk.model.ConversationData
+import com.wire.sdk.model.ConversationMember
+import com.wire.sdk.model.QualifiedId
+import com.wire.sdk.model.WireMessage
 import io.lettuce.core.api.StatefulRedisConnection
 import org.koin.core.context.GlobalContext
 

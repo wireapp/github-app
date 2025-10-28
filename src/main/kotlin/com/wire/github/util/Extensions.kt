@@ -1,6 +1,6 @@
 package com.wire.github.util
 
-import com.wire.integrations.jvm.model.QualifiedId
+import com.wire.sdk.model.QualifiedId
 
 fun QualifiedId.toStorageKey() = "${this.id}@${this.domain}"
 

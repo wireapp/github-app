@@ -4,9 +4,9 @@ import com.wire.github.response.model.GitHubResponse
 import com.wire.github.util.KtxSerializer
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
-import com.wire.integrations.jvm.WireAppSdk
-import com.wire.integrations.jvm.model.QualifiedId
-import com.wire.integrations.jvm.model.WireMessage
+import com.wire.sdk.WireAppSdk
+import com.wire.sdk.model.QualifiedId
+import com.wire.sdk.model.WireMessage
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
