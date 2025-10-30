@@ -1,4 +1,4 @@
-🆕 **New Pull Request Opened!** by **{{pullRequest.user.login}}**
+🟢 **New Pull Request Opened!** by **{{pullRequest.user.login}}**
 
 📦 **Repository:** {{repository.fullName}}
 🔖 **Title:** {{pullRequest.title}}
