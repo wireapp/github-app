@@ -1,4 +1,10 @@
-**[{{repository.fullName}}]** Pull request **{{{pullRequest.title}}}** was {{action}} by **{{sender.login}}**
+{{#pullRequest.merged}}
+🚀 **Pull Request Merged!** by **{{ pullRequest.user.login }}**
+{{/pullRequest.merged}}
+{{^pullRequest.merged}}
+❌ **Pull Request Closed!** by **{{ pullRequest.user.login }}**
+{{/pullRequest.merged}}
 
-[pull request]({{pullRequest.htmlUrl}})
-—
+📦 **Repository:** {{repository.fullName}}
+🔖 **Title:** {{pullRequest.title}}
+🔗 **PR Link:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}})
