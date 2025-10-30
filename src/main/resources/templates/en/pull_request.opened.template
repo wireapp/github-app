@@ -1,6 +1,5 @@
-**[{{repository.fullName}}]** Pull request **{{{pullRequest.title}}}** was {{action}} by **{{pullRequest.user.login}}**
+🟢 **New Pull Request Opened!** by **{{pullRequest.user.login}}**
 
-{{{pullRequest.body}}}
-
-[link]({{pullRequest.htmlUrl}})
-—
+📦 **Repository:** {{repository.fullName}}
+🔖 **Title:** {{pullRequest.title}}
+🔗 **PR Link:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}})
