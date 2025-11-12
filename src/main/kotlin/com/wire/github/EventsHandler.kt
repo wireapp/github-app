@@ -15,7 +15,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
     private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
     private val storage = redisConnection.sync()
 
-    override suspend fun onMessage(wireMessage: WireMessage.Text) {
+    override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         if (wireMessage.text.equals("/help", ignoreCase = true)) {
             val message = formatHelp(
                 conversationId = wireMessage.conversationId,
@@ -31,7 +31,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
         }
     }
 
-    override suspend fun onConversationJoin(
+    override suspend fun onAppAddedToConversation(
         conversation: ConversationData,
         members: List<ConversationMember>
     ) {
