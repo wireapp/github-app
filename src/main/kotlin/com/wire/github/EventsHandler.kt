@@ -10,13 +10,20 @@ import com.wire.sdk.model.QualifiedId
 import com.wire.sdk.model.WireMessage
 import io.lettuce.core.api.StatefulRedisConnection
 import org.koin.core.context.GlobalContext
+import org.slf4j.LoggerFactory
 
 class EventsHandler : WireEventsHandlerSuspending() {
+    private val logger = LoggerFactory.getLogger(this::class.java)
     private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
     private val storage = redisConnection.sync()
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         if (wireMessage.text.equals("/help", ignoreCase = true)) {
+            logger.info(
+                "Event received. Event: TextMessageReceived (HELP command)," +
+                    "conversationId: ${wireMessage.conversationId}," +
+                    "senderId: ${wireMessage.sender.id}"
+            )
             val message = formatHelp(
                 conversationId = wireMessage.conversationId,
                 secret = storage.get(wireMessage.conversationId.toStorageKey())
@@ -28,6 +35,10 @@ class EventsHandler : WireEventsHandlerSuspending() {
                     text = message
                 )
             )
+            logger.info(
+                "Event is processed successfully. Event: TextMessageReceived (HELP command), " +
+                    "conversationId: ${wireMessage.conversationId}"
+            )
         }
     }
 
@@ -35,6 +46,10 @@ class EventsHandler : WireEventsHandlerSuspending() {
         conversation: ConversationData,
         members: List<ConversationMember>
     ) {
+        logger.info(
+            "Event received. Event: AppAddedToConversation, " +
+                "conversationId: ${conversation.id}"
+        )
         val message = formatHelp(conversationId = conversation.id)
 
         manager.sendMessage(
@@ -42,6 +57,10 @@ class EventsHandler : WireEventsHandlerSuspending() {
                 conversationId = conversation.id,
                 text = message
             )
+        )
+        logger.info(
+            "Event is processed successfully. Event: AppAddedToConversation, " +
+                "conversationId: ${conversation.id}"
         )
     }
 
