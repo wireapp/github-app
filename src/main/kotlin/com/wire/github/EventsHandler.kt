@@ -22,7 +22,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
             logger.info(
                 "Event received. Event: TextMessageReceived (HELP command)," +
                     "conversationId: ${wireMessage.conversationId}," +
-                    "senderId: ${wireMessage.sender.id}"
+                    "senderId: ${wireMessage.sender}"
             )
             val message = formatHelp(
                 conversationId = wireMessage.conversationId,
