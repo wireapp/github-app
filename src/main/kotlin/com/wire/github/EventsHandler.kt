@@ -20,8 +20,8 @@ class EventsHandler : WireEventsHandlerSuspending() {
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         if (wireMessage.text.equals("/help", ignoreCase = true)) {
             logger.info(
-                "Event received. Event: TextMessageReceived (HELP command)," +
-                    "conversationId: ${wireMessage.conversationId}," +
+                "Event received. Event: TextMessageReceived (HELP command), " +
+                    "conversationId: ${wireMessage.conversationId}, " +
                     "senderId: ${wireMessage.sender}"
             )
             val message = formatHelp(
