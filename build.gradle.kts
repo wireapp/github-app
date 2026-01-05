@@ -95,7 +95,7 @@ tasks {
     named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
         mergeServiceFiles()
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
-        archiveBaseName = "qrapp-all"
+        archiveBaseName = "github-app"
         archiveFileName.set("github-app.jar")
         manifest {
             attributes["Main-Class"] = "com.wire.github.ApplicationKt"
