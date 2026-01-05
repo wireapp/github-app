@@ -66,3 +66,9 @@ out/
 *.pid
 *.seed
 *.orig
+
+# Ignore Storage directory content but keep the directory
+storage/*
+!storage/.gitkeep
+
+CLAUDE.md
