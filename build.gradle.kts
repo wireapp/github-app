@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.ktor)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
+    alias(libs.plugins.shadow)
+    application
 }
 
 group = "com.wire"
@@ -90,11 +92,17 @@ detekt {
 }
 
 tasks {
-    shadowJar {
+    named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+        mergeServiceFiles()
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        archiveBaseName = "github-app"
         archiveFileName.set("github-app.jar")
         manifest {
             attributes["Main-Class"] = "com.wire.github.ApplicationKt"
         }
+    }
+    build {
+        dependsOn(shadowJar)
     }
 
     /**
