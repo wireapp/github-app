@@ -18,7 +18,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
     private val storage = redisConnection.sync()
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
-        if (wireMessage.text.equals("/help", ignoreCase = true)) {
+        if (wireMessage.text.equals(HELP_COMMAND, ignoreCase = true)) {
             logger.info(
                 "Event received. Event: TextMessageReceived (HELP command), " +
                     "conversationId: ${wireMessage.conversationId}, " +
@@ -97,5 +97,6 @@ class EventsHandler : WireEventsHandlerSuspending() {
 
     private companion object {
         const val HOST_URL_PATTERN = "%s/%s/%s"
+        const val HELP_COMMAND = "/github help"
     }
 }
