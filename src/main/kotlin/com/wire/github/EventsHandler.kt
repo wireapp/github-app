@@ -54,7 +54,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
             appendLine(WELCOME_TEXT)
             appendLine(formatSetupInstructions(conversationId = conversation.id))
             appendLine()
-            append("Use the `$HELP_COMMAND` to see this message again.")
+            append("Use the `$HELP_COMMAND` command to see the usage again.")
         }
 
         manager.sendMessage(
