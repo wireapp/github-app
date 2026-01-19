@@ -18,13 +18,13 @@ class EventsHandler : WireEventsHandlerSuspending() {
     private val storage = redisConnection.sync()
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
-        if (wireMessage.text.equals("/help", ignoreCase = true)) {
+        if (wireMessage.text.equals(HELP_COMMAND, ignoreCase = true)) {
             logger.info(
                 "Event received. Event: TextMessageReceived (HELP command), " +
                     "conversationId: ${wireMessage.conversationId}, " +
                     "senderId: ${wireMessage.sender}"
             )
-            val message = formatHelp(
+            val message = formatSetupInstructions(
                 conversationId = wireMessage.conversationId,
                 secret = storage.get(wireMessage.conversationId.toStorageKey())
             )
@@ -50,7 +50,12 @@ class EventsHandler : WireEventsHandlerSuspending() {
             "Event received. Event: AppAddedToConversation, " +
                 "conversationId: ${conversation.id}"
         )
-        val message = formatHelp(conversationId = conversation.id)
+        val message = buildString {
+            appendLine(WELCOME_TEXT)
+            appendLine(formatSetupInstructions(conversationId = conversation.id))
+            appendLine()
+            append("Use the `$HELP_COMMAND` command to see the usage again.")
+        }
 
         manager.sendMessage(
             message = WireMessage.Text.create(
@@ -64,7 +69,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
         )
     }
 
-    private fun formatHelp(
+    private fun formatSetupInstructions(
         conversationId: QualifiedId,
         secret: String? = null
     ): String {
@@ -81,8 +86,8 @@ class EventsHandler : WireEventsHandlerSuspending() {
             conversationId.domain
         )
 
-        val message = String.format(
-            "Hi, I'm GitHub App. Here is how to set me up:\n\n" +
+        val setupInstructions = String.format(
+            "Here is how to set me up:\n\n" +
                 "1. Go to the repository that you would like to connect to\n" +
                 "2. Go to **Settings / Webhooks / Add webhook**\n" +
                 "3. Add **Payload URL**: %s\n" +
@@ -92,10 +97,17 @@ class EventsHandler : WireEventsHandlerSuspending() {
             generatedSecret
         )
 
-        return message
+        return setupInstructions
     }
 
     private companion object {
         const val HOST_URL_PATTERN = "%s/%s/%s"
+
+        const val WELCOME_TEXT =
+            "👋 Hi, I'm GitHub App. Thanks for adding me to the conversation.\n" +
+                "You can use me to receive GitHub notifications in Wire.\n" +
+                "I'm here to help make everyday work a little easier."
+
+        const val HELP_COMMAND = "/github help"
     }
 }
