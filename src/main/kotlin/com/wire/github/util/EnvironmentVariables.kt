@@ -102,7 +102,8 @@ val ENV_VAR_API_HOST: String = System
  */
 val ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY: ByteArray =
     requireNotNull(System.getenv("WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY")) {
-        "WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY must be set (base64 of $CRYPTOGRAPHY_STORAGE_KEY_BYTES bytes)"
+        "WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY must be set " +
+            "(base64 of $CRYPTOGRAPHY_STORAGE_KEY_BYTES bytes)"
     }.let { Base64.getDecoder().decode(it) }
         .also {
             require(it.size == CRYPTOGRAPHY_STORAGE_KEY_BYTES) {
