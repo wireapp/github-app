@@ -116,6 +116,6 @@ tasks {
         environment("WIRE_SDK_API_HOST", "https://nginz-https.chala.wire.link")
         environment("WIRE_SDK_API_TOKEN", "myApiToken")
         environment("WIRE_SDK_APP_ID", "f562e146-dec2-4d85-93c7-7132746b5cca")
-        environment("WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD", "myDummyPasswordmyDummyPassword01")
+        environment("WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
     }
 }

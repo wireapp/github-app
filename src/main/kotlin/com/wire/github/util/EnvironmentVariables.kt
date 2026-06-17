@@ -8,6 +8,7 @@
  */
 package com.wire.github.util
 
+import java.util.Base64
 import java.util.UUID
 
 /**
@@ -90,10 +91,24 @@ val ENV_VAR_API_HOST: String = System
     )
 
 /**
- * Cryptography storage password
+ * Cryptography storage key
  * Used when setting up the user and client database.
  * If lost or forgotten, there is no future access to the database.
- * Must be exactly 32 characters
+ *
+ * The Wire SDK requires exactly 32 raw bytes (`CRYPTOGRAPHY_STORAGE_KEY_BYTES`).
+ * Since raw binary cannot live safely in an environment variable, the value is
+ * supplied base64-encoded and decoded here.
+ * Generate one with: `head -c 32 /dev/urandom | base64`
  */
-val ENV_VAR_CRYPTOGRAPHY_STORAGE_PASSWORD: String = System
-    .getenv("WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD")
+val ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY: ByteArray =
+    requireNotNull(System.getenv("WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY")) {
+        "WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY must be set (base64 of $CRYPTOGRAPHY_STORAGE_KEY_BYTES bytes)"
+    }.let { Base64.getDecoder().decode(it) }
+        .also {
+            require(it.size == CRYPTOGRAPHY_STORAGE_KEY_BYTES) {
+                "WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY must decode to exactly " +
+                    "$CRYPTOGRAPHY_STORAGE_KEY_BYTES bytes (was ${it.size})"
+            }
+        }
+
+private const val CRYPTOGRAPHY_STORAGE_KEY_BYTES = 32
