@@ -115,7 +115,7 @@ tasks {
         environment("GHAPP_REDIS_PORT", "6379")
         environment("GHAPP_GITHUB_CLIENT_ID", "dummyClientId")
         environment("GHAPP_GITHUB_CLIENT_SECRET", "dummyClientSecret")
-        environment("GHAPP_GITHUB_PRIVATE_KEY", "dummyPrivateKey")
+        environment("GHAPP_GITHUB_PRIVATE_KEY_FILE", "/dev/null")
         environment("GHAPP_GITHUB_WEBHOOK_SECRET", "dummyWebhookSecret")
         environment("GHAPP_GITHUB_REPO_INACTIVITY_SECONDS", "604800")
         environment("WIRE_SDK_API_HOST", "https://nginz-https.chala.wire.link")

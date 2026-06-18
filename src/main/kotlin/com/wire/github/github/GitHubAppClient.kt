@@ -223,7 +223,7 @@ class GitHubAppClient(
 
     private fun githubPrivateKey(): RSAPrivateKey =
         requireNotNull(ENV_VAR_GITHUB_PRIVATE_KEY) {
-            "GHAPP_GITHUB_PRIVATE_KEY must be set to provision GitHub repository webhooks"
+            "GHAPP_GITHUB_PRIVATE_KEY_FILE must be set to provision GitHub repository webhooks"
         }.toRsaPrivateKey()
 
     private fun String.toRsaPrivateKey(): RSAPrivateKey {

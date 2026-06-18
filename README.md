@@ -50,7 +50,7 @@ GHAPP_REDIS_HOST=redis://redis
 GHAPP_REDIS_PORT=6380
 GHAPP_GITHUB_CLIENT_ID=Iv1.example
 GHAPP_GITHUB_CLIENT_SECRET=exampleClientSecret
-GHAPP_GITHUB_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----
+GHAPP_GITHUB_PRIVATE_KEY_FILE=/run/secrets/github-app-private-key.pem
 GHAPP_GITHUB_WEBHOOK_SECRET=exampleWebhookSecret
 GHAPP_GITHUB_REPO_INACTIVITY_SECONDS=604800
 WIRE_SDK_API_HOST=https://nginz-https.chala.wire.link
@@ -61,7 +61,7 @@ WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
 The GitHub App must be installed for the organization/repositories it should
 manage and needs repository webhook write permissions. `GHAPP_GITHUB_CLIENT_ID`
-and `GHAPP_GITHUB_PRIVATE_KEY` are used for GitHub App server-to-server
+and `GHAPP_GITHUB_PRIVATE_KEY_FILE` are used for GitHub App server-to-server
 authentication; `GHAPP_GITHUB_WEBHOOK_SECRET` is configured on created
 repository webhooks and used to validate incoming GitHub deliveries.
 
