@@ -42,14 +42,6 @@ class TemplateHandler {
         response: GitHubResponse
     ): String? =
         when (event) {
-            EVENT_CHECK_SUITE ->
-                response.checkSuite
-                    ?.takeIf { it.successful || it.failed }
-                    ?.let { eventTemplatePath(event) }
-            EVENT_STATUS ->
-                response
-                    .takeIf { it.statusSuccessful || it.statusFailed }
-                    ?.let { eventTemplatePath(event) }
             EVENT_WORKFLOW_RUN ->
                 response.workflowRun
                     ?.takeIf { it.id != null }
@@ -96,8 +88,6 @@ class TemplateHandler {
     private companion object {
         const val LANGUAGE_ENGLISH = "en"
         const val TEMPLATE_DIRECTORY = "templates"
-        const val EVENT_CHECK_SUITE = "check_suite"
-        const val EVENT_STATUS = "status"
         const val EVENT_WORKFLOW_RUN = "workflow_run"
     }
 }
