@@ -34,6 +34,38 @@ val ENV_VAR_HOST: String = System
     )
 
 /**
+ * GitHub App client ID. Used as the JWT issuer when authenticating as the app.
+ */
+val ENV_VAR_GITHUB_CLIENT_ID: String? = System.getenv("GHAPP_GITHUB_CLIENT_ID")
+
+/**
+ * GitHub App client secret. Kept available for GitHub App flows that need OAuth,
+ * though repository webhook provisioning authenticates with the private key.
+ */
+val ENV_VAR_GITHUB_CLIENT_SECRET: String? = System.getenv("GHAPP_GITHUB_CLIENT_SECRET")
+
+/**
+ * GitHub App private key in PEM format.
+ * Newlines may be provided either literally or escaped as "\n".
+ */
+val ENV_VAR_GITHUB_PRIVATE_KEY: String? = System.getenv("GHAPP_GITHUB_PRIVATE_KEY")
+
+/**
+ * Secret configured on repository webhooks created by this app.
+ */
+val ENV_VAR_GITHUB_WEBHOOK_SECRET: String? = System.getenv("GHAPP_GITHUB_WEBHOOK_SECRET")
+
+/**
+ * Number of seconds a repository may stay inactive before its webhook is removed.
+ */
+val ENV_VAR_GITHUB_REPO_INACTIVITY_SECONDS: Long = System
+    .getenv()
+    .getOrDefault(
+        "GHAPP_GITHUB_REPO_INACTIVITY_SECONDS",
+        "604800"
+    ).toLong()
+
+/**
  * Redis Host URL
  * In case it needs a password, must be included in this same environment variable.
  * Examples:
