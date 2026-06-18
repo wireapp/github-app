@@ -2,11 +2,9 @@
 {{! Also fires for force-pushes and for branch/tag deletions. }}
 {{! A deletion carries no commits, so the commits-empty guard below renders nothing for it. }}
 {{^commits.isEmpty}}
-**[{{repository.fullName}}]** Push by **{{sender.login}}**
+**@{{sender.login}}** [pushed]({{compare}}) to **{{repository.fullName}}**:
 
 {{#commits}}
- - {{{message}}}
+- {{{message}}}
 {{/commits}}
-
-[compare]({{compare}})
-—{{/commits.isEmpty}}
+{{/commits.isEmpty}}

@@ -1,7 +1,4 @@
 {{! Fired on the "issues" event (action=reopened): a previously closed issue (never a pull request) was reopened. }}
-**[{{repository.fullName}}]** Issue **{{{issue.title}}}** {{action}} by **{{sender.login}}**
+[**{{{issue.title}}}**]({{issue.htmlUrl}}) {{action}} by **@{{sender.login}}**
 
 {{{issue.body}}}
-
-{{issue.htmlUrl}}
-—

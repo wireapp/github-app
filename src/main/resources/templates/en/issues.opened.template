@@ -1,7 +1,4 @@
 {{! Fired on the "issues" event (action=opened): a new issue (never a pull request) was created. }}
-**[{{repository.fullName}}]** Issue **{{{issue.title}}}** {{action}} by **{{issue.user.login}}**
+[**{{{issue.title}}}**]({{issue.htmlUrl}}) {{action}} by **@{{issue.user.login}}**
 
 {{{issue.body}}}
-
-[issue]({{issue.htmlUrl}})
-—

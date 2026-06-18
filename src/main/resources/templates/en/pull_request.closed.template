@@ -1,12 +1,3 @@
 {{! Fired on the "pull_request" event (action=closed). }}
 {{! GitHub uses action=closed for BOTH merged and merely-closed PRs, so this template branches on pullRequest.merged to tell them apart. }}
-{{#pullRequest.merged}}
-🚀 **Pull Request Merged!** by **{{ pullRequest.user.login }}**
-{{/pullRequest.merged}}
-{{^pullRequest.merged}}
-❌ **Pull Request Closed!** by **{{ pullRequest.user.login }}**
-{{/pullRequest.merged}}
-
-📦 **Repository:** {{repository.fullName}}
-🔖 **Title:** {{pullRequest.title}}
-🔗 **PR Link:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}})
+[**{{{pullRequest.title}}}**]({{pullRequest.htmlUrl}}): {{#pullRequest.merged}}🚀 **Merged**{{/pullRequest.merged}}{{^pullRequest.merged}}❌ **Closed**{{/pullRequest.merged}} by **@{{sender.login}}**
