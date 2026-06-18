@@ -19,7 +19,7 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 # github-app
 
 
-## Features
+## Features 🚀
 
 Here's a list of features included in this project:
 
