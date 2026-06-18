@@ -43,7 +43,16 @@ class GitHubAppClient(
             token = token
         )
 
-        return existingHook ?: createRepositoryWebhook(
+        if (existingHook != null) {
+            updateRepositoryWebhook(
+                repository = repository,
+                webhookId = existingHook,
+                token = token
+            )
+            return existingHook
+        }
+
+        return createRepositoryWebhook(
             repository = repository,
             webhookUrl = webhookUrl,
             webhookSecret = webhookSecret,
@@ -137,6 +146,31 @@ class GitHubAppClient(
             ?.jsonPrimitive
             ?.long
             ?: error("GitHub webhook creation response did not include an id")
+    }
+
+    private fun updateRepositoryWebhook(
+        repository: GitHubRepository,
+        webhookId: Long,
+        token: String
+    ) {
+        val body = buildJsonObject {
+            put("active", true)
+            put("events", repositoryEvents())
+        }.toString()
+
+        val response = send(
+            request = requestBuilder(
+                "/repos/${repository.owner}/${repository.name}/hooks/$webhookId"
+            ).method("PATCH", HttpRequest.BodyPublishers.ofString(body))
+                .withBearer(token)
+                .header("Content-Type", "application/json")
+                .build()
+        )
+
+        require(response.statusCode() in SUCCESS_STATUS_CODES) {
+            "GitHub failed to update webhook for ${repository.fullName}: " +
+                "${response.statusCode()} ${response.body()}"
+        }
     }
 
     private fun createInstallationAccessToken(repository: GitHubRepository): String {

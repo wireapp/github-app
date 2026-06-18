@@ -42,11 +42,6 @@ class GitHubWebhookManager(
         storage.sadd(conversationsKey(repository.fullName), conversationId.toStorageKey())
         markRepositoryActive(repository.fullName)
 
-        val existingWebhookId = storage.get(webhookIdKey(repository.fullName))?.toLongOrNull()
-        if (existingWebhookId != null) {
-            return existingWebhookId
-        }
-
         return gitHubAppClient
             .ensureRepositoryWebhook(
                 repository = repository,
