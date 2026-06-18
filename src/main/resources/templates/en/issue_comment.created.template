@@ -1,8 +1,7 @@
 {{! Fired on the "issue_comment" event (action=created). }}
 {{! This also fires for top-level comments on Pull Requests, because GitHub models a PR's conversation timeline as an issue. }}
 {{! It does not fire for inline diff-line review comments — those are pull_request_review_comment events, which we intentionally do not notify on. }}
-**[{{repository.fullName}}]** New comment by **{{sender.login}}** on issue **{{{issue.title}}}**
+**{{{issue.title}}}**
+**@{{comment.user.login}}** [commented]({{comment.htmlUrl}}):
 
 {{{comment.body}}}
-
-[comment]({{comment.htmlUrl}})
