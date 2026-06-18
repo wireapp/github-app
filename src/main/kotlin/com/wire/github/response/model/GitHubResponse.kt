@@ -14,6 +14,8 @@ data class GitHubResponse(
     val sender: User,
     val compare: String? = null,
     val review: Review? = null,
+    @SerialName("check_suite")
+    val checkSuite: CheckSuite? = null,
     val state: String? = null,
     val context: String? = null,
     val description: String? = null,
