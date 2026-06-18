@@ -49,7 +49,7 @@ class GitHubWebhookManager(
             storage.sadd(
                 conversationsKey(repository.fullName),
                 conversationId.toStorageKey()
-            ) > 0
+            ) == 1L
 
         markRepositoryActive(repository.fullName)
 
