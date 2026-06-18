@@ -4,7 +4,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Review(
-    val body: String,
+    val body: String? = null,
     val user: User,
     val state: String
-)
+) {
+    val approved: Boolean get() = state.equals("approved", ignoreCase = true)
+    val changesRequested: Boolean get() = state.equals("changes_requested", ignoreCase = true)
+    val commented: Boolean get() = state.equals("commented", ignoreCase = true)
+}
