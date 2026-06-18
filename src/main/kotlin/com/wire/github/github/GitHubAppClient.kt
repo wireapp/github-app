@@ -336,6 +336,7 @@ class GitHubAppClient(
     private fun repositoryEvents(): JsonArray =
         buildJsonArray {
             add(JsonPrimitive("check_suite"))
+            add(JsonPrimitive("issue_comment"))
             add(JsonPrimitive("pull_request"))
             add(JsonPrimitive("pull_request_review"))
             add(JsonPrimitive("pull_request_review_comment"))
