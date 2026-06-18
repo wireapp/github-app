@@ -61,17 +61,9 @@ class TemplateHandler {
         response: GitHubResponse
     ): String? =
         when (event) {
-            EVENT_CHECK_SUITE ->
-                response.checkSuite
-                    ?.takeIf { it.successful || it.failed }
-                    ?.let { eventTemplatePath(event) }
-            EVENT_STATUS ->
-                response
-                    .takeIf { it.statusSuccessful || it.statusFailed }
-                    ?.let { eventTemplatePath(event) }
             EVENT_WORKFLOW_RUN ->
                 response.workflowRun
-                    ?.takeIf { it.successful || it.failed }
+                    ?.takeIf { it.id != null }
                     ?.let { eventTemplatePath(event) }
             else -> response.action?.let {
                 actionTemplatePath(
@@ -118,8 +110,6 @@ class TemplateHandler {
         const val PULL_REQUEST_EVENT = "pull_request"
         const val LINKED_ACTION = "linked"
         const val PULL_REQUEST_MODEL_KEY = "pullRequest"
-        const val EVENT_CHECK_SUITE = "check_suite"
-        const val EVENT_STATUS = "status"
         const val EVENT_WORKFLOW_RUN = "workflow_run"
     }
 }

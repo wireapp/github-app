@@ -43,11 +43,10 @@ class EventsHandler : WireEventsHandlerSuspending() {
         }
 
         val conversationId = wireMessage.conversationId
-        val statusMessage = registerRepositories(
+        registerRepositories(
             repositories = pullRequests.map { it.repository }.toSet(),
             conversationId = conversationId
-        )
-        if (statusMessage.isNotBlank()) {
+        )?.let { statusMessage ->
             sendMessage(
                 conversationId = conversationId,
                 text = statusMessage
@@ -88,8 +87,8 @@ class EventsHandler : WireEventsHandlerSuspending() {
     private fun registerRepositories(
         repositories: Set<GitHubRepository>,
         conversationId: QualifiedId
-    ): String {
-        val results = repositories.map { repository ->
+    ): String? {
+        val results = repositories.mapNotNull { repository ->
             runCatching {
                 gitHubWebhookManager.ensureWebhookForConversation(
                     repository = repository,
@@ -113,7 +112,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
             )
         }
 
-        return results.filterNotNull().joinToString(separator = "\n")
+        return results.takeIf { it.isNotEmpty() }?.joinToString("\n")
     }
 
     private fun announcePullRequests(

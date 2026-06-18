@@ -49,7 +49,7 @@ class GitHubWebhookManager(
             storage.sadd(
                 conversationsKey(repository.fullName),
                 conversationId.toStorageKey()
-            ) > 0
+            ) == 1L
 
         markRepositoryActive(repository.fullName)
 
@@ -94,6 +94,26 @@ class GitHubWebhookManager(
         storage.set(lastActivityKey(fullName), clock.millis().toString())
     }
 
+    fun workflowRunMessageId(
+        fullName: String,
+        workflowRunId: Long,
+        conversationId: QualifiedId
+    ): UUID? =
+        storage
+            .get(workflowRunMessageIdKey(fullName, workflowRunId, conversationId))
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+
+    fun rememberWorkflowRunMessageId(
+        fullName: String,
+        workflowRunId: Long,
+        conversationId: QualifiedId,
+        messageId: UUID
+    ) {
+        val key = workflowRunMessageIdKey(fullName, workflowRunId, conversationId)
+        storage.set(key, messageId.toString())
+        storage.sadd(workflowRunMessageIdsKey(fullName), key)
+    }
+
     fun cleanupInactiveRepositories() {
         val cutoff = clock.millis() - ENV_VAR_GITHUB_REPO_INACTIVITY_SECONDS * MILLIS_PER_SECOND
         storage.smembers(KNOWN_REPOSITORIES_KEY).forEach { fullName ->
@@ -119,6 +139,10 @@ class GitHubWebhookManager(
         storage.del(webhookIdKey(fullName))
         storage.del(conversationsKey(fullName))
         storage.del(lastActivityKey(fullName))
+        storage.smembers(workflowRunMessageIdsKey(fullName)).forEach { key ->
+            storage.del(key)
+        }
+        storage.del(workflowRunMessageIdsKey(fullName))
         logger.info("Removed inactive GitHub webhook subscription for repository: $fullName")
     }
 
@@ -148,6 +172,17 @@ class GitHubWebhookManager(
 
     private fun lastActivityKey(fullName: String): String =
         "$REPOSITORY_KEY_PREFIX:$fullName:last_activity"
+
+    private fun workflowRunMessageIdKey(
+        fullName: String,
+        workflowRunId: Long,
+        conversationId: QualifiedId
+    ): String =
+        "$REPOSITORY_KEY_PREFIX:$fullName:workflow_run:$workflowRunId:" +
+            conversationId.toStorageKey()
+
+    private fun workflowRunMessageIdsKey(fullName: String): String =
+        "$REPOSITORY_KEY_PREFIX:$fullName:workflow_run_messages"
 
     companion object {
         const val GITHUB_WEBHOOK_PATH = "github/webhook"
