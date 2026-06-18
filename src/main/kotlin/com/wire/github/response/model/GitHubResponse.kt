@@ -16,6 +16,8 @@ data class GitHubResponse(
     val review: Review? = null,
     @SerialName("check_suite")
     val checkSuite: CheckSuite? = null,
+    @SerialName("workflow_run")
+    val workflowRun: WorkflowRun? = null,
     val state: String? = null,
     val context: String? = null,
     val description: String? = null,
