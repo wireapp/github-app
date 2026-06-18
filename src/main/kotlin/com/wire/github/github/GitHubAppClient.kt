@@ -118,7 +118,7 @@ class GitHubAppClient(
         val body = buildJsonObject {
             put("name", WEBHOOK_NAME)
             put("active", true)
-            put("events", pullRequestEvents())
+            put("events", repositoryEvents())
             putJsonObject("config") {
                 put("url", webhookUrl)
                 put("content_type", WEBHOOK_CONTENT_TYPE)
@@ -333,11 +333,14 @@ class GitHubAppClient(
             ?.jsonPrimitive
             ?.contentOrNull
 
-    private fun pullRequestEvents(): JsonArray =
+    private fun repositoryEvents(): JsonArray =
         buildJsonArray {
+            add(JsonPrimitive("check_suite"))
             add(JsonPrimitive("pull_request"))
             add(JsonPrimitive("pull_request_review"))
             add(JsonPrimitive("pull_request_review_comment"))
+            add(JsonPrimitive("status"))
+            add(JsonPrimitive("workflow_run"))
         }
 
     private companion object {
