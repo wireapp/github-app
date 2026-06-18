@@ -62,9 +62,7 @@ class TemplateHandler {
     ): String? =
         when (event) {
             EVENT_WORKFLOW_RUN ->
-                response.workflowRun
-                    ?.takeIf { it.id != null }
-                    ?.let { eventTemplatePath(event) }
+                null
             else -> response.action?.let {
                 actionTemplatePath(
                     event = event,

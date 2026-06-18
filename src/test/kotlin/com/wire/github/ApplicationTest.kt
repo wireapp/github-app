@@ -33,6 +33,7 @@ import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class ApplicationTest {
     @BeforeTest
@@ -161,7 +162,7 @@ class ApplicationTest {
     }
 
     @Test
-    fun `given workflow run has no stored message, then sends text message and stores id`() {
+    fun `given commit has no CI message, then sends aggregate status and stores id`() {
         val signatureValidator = mockk<SignatureValidator>()
         every {
             signatureValidator.isValid(
@@ -184,12 +185,6 @@ class ApplicationTest {
         every { wireAppSdk.getApplicationManager() } returns applicationManager
 
         val templateHandler = mockk<TemplateHandler>()
-        every {
-            templateHandler.handleEvent(
-                event = EVENT_WORKFLOW_RUN,
-                response = any()
-            )
-        } returns DUMMY_TEMPLATE
 
         val gitHubWebhookManager = mockk<GitHubWebhookManager>()
         every {
@@ -197,16 +192,35 @@ class ApplicationTest {
         } returns listOf(CONVERSATION_ID)
         justRun { gitHubWebhookManager.markRepositoryActive(REPOSITORY_FULL_NAME) }
         every {
-            gitHubWebhookManager.workflowRunMessageId(
+            gitHubWebhookManager.updateCommitCiWorkflow(
                 fullName = REPOSITORY_FULL_NAME,
-                workflowRunId = WORKFLOW_RUN_ID,
-                conversationId = CONVERSATION_ID
+                headSha = WORKFLOW_HEAD_SHA,
+                conversationId = CONVERSATION_ID,
+                workflow = any()
             )
-        } returns null
+        } returns GitHubWebhookManager.CommitCiSummary(
+            messageId = null,
+            workflows = listOf(
+                GitHubWebhookManager.CommitCiWorkflow(
+                    runId = WORKFLOW_RUN_ID,
+                    name = "Build",
+                    status = "in_progress",
+                    conclusion = null,
+                    htmlUrl = "https://github.com/wireapp/github-app/actions/runs/$WORKFLOW_RUN_ID"
+                ),
+                GitHubWebhookManager.CommitCiWorkflow(
+                    runId = SECOND_WORKFLOW_RUN_ID,
+                    name = "Tests",
+                    status = "completed",
+                    conclusion = "success",
+                    htmlUrl = SECOND_WORKFLOW_URL
+                )
+            )
+        )
         justRun {
-            gitHubWebhookManager.rememberWorkflowRunMessageId(
+            gitHubWebhookManager.rememberCommitCiMessageId(
                 fullName = REPOSITORY_FULL_NAME,
-                workflowRunId = WORKFLOW_RUN_ID,
+                headSha = WORKFLOW_HEAD_SHA,
                 conversationId = CONVERSATION_ID,
                 messageId = sentMessageId
             )
@@ -237,11 +251,14 @@ class ApplicationTest {
             }
 
             assertEquals(HttpStatusCode.OK, response.status)
-            assertIs<WireMessage.Text>(sentMessage.captured)
+            val textMessage = assertIs<WireMessage.Text>(sentMessage.captured)
+            assertTrue(textMessage.text.contains("**Check suite status:** Running"))
+            assertTrue(textMessage.text.contains("**Build:** In Progress"))
+            assertTrue(textMessage.text.contains("**Tests:** Success"))
             verify(exactly = 1) {
-                gitHubWebhookManager.rememberWorkflowRunMessageId(
+                gitHubWebhookManager.rememberCommitCiMessageId(
                     fullName = REPOSITORY_FULL_NAME,
-                    workflowRunId = WORKFLOW_RUN_ID,
+                    headSha = WORKFLOW_HEAD_SHA,
                     conversationId = CONVERSATION_ID,
                     messageId = sentMessageId
                 )
@@ -250,7 +267,7 @@ class ApplicationTest {
     }
 
     @Test
-    fun `given workflow run has stored message, then edits message and stores new id`() {
+    fun `given commit has stored CI message, then edits aggregate status and stores new id`() {
         val signatureValidator = mockk<SignatureValidator>()
         every {
             signatureValidator.isValid(
@@ -274,12 +291,6 @@ class ApplicationTest {
         every { wireAppSdk.getApplicationManager() } returns applicationManager
 
         val templateHandler = mockk<TemplateHandler>()
-        every {
-            templateHandler.handleEvent(
-                event = EVENT_WORKFLOW_RUN,
-                response = any()
-            )
-        } returns DUMMY_TEMPLATE
 
         val gitHubWebhookManager = mockk<GitHubWebhookManager>()
         every {
@@ -287,16 +298,28 @@ class ApplicationTest {
         } returns listOf(CONVERSATION_ID)
         justRun { gitHubWebhookManager.markRepositoryActive(REPOSITORY_FULL_NAME) }
         every {
-            gitHubWebhookManager.workflowRunMessageId(
+            gitHubWebhookManager.updateCommitCiWorkflow(
                 fullName = REPOSITORY_FULL_NAME,
-                workflowRunId = WORKFLOW_RUN_ID,
-                conversationId = CONVERSATION_ID
+                headSha = WORKFLOW_HEAD_SHA,
+                conversationId = CONVERSATION_ID,
+                workflow = any()
             )
-        } returns storedMessageId
+        } returns GitHubWebhookManager.CommitCiSummary(
+            messageId = storedMessageId,
+            workflows = listOf(
+                GitHubWebhookManager.CommitCiWorkflow(
+                    runId = WORKFLOW_RUN_ID,
+                    name = "Build",
+                    status = "completed",
+                    conclusion = "success",
+                    htmlUrl = "https://github.com/wireapp/github-app/actions/runs/$WORKFLOW_RUN_ID"
+                )
+            )
+        )
         justRun {
-            gitHubWebhookManager.rememberWorkflowRunMessageId(
+            gitHubWebhookManager.rememberCommitCiMessageId(
                 fullName = REPOSITORY_FULL_NAME,
-                workflowRunId = WORKFLOW_RUN_ID,
+                headSha = WORKFLOW_HEAD_SHA,
                 conversationId = CONVERSATION_ID,
                 messageId = editedMessageId
             )
@@ -329,10 +352,12 @@ class ApplicationTest {
             assertEquals(HttpStatusCode.OK, response.status)
             val editedMessage = assertIs<WireMessage.TextEdited>(sentMessage.captured)
             assertEquals(storedMessageId, editedMessage.replacingMessageId)
+            assertTrue(editedMessage.newContent.contains("**Check suite status:** Passed"))
+            assertTrue(editedMessage.newContent.contains("**Build:** Success"))
             verify(exactly = 1) {
-                gitHubWebhookManager.rememberWorkflowRunMessageId(
+                gitHubWebhookManager.rememberCommitCiMessageId(
                     fullName = REPOSITORY_FULL_NAME,
-                    workflowRunId = WORKFLOW_RUN_ID,
+                    headSha = WORKFLOW_HEAD_SHA,
                     conversationId = CONVERSATION_ID,
                     messageId = editedMessageId
                 )
@@ -352,6 +377,9 @@ class ApplicationTest {
         const val DUMMY_WEBHOOK_SECRET = "dummyWebhookSecret"
         const val REPOSITORY_FULL_NAME = "dummy_repository_full_name"
         const val WORKFLOW_RUN_ID = 1234L
+        const val SECOND_WORKFLOW_RUN_ID = 5678L
+        const val WORKFLOW_HEAD_SHA = "1234567890abcdef"
+        const val SECOND_WORKFLOW_URL = "https://example.com/actions/runs/$SECOND_WORKFLOW_RUN_ID"
         val DUMMY_PAYLOAD = """
             {
                 "action": "created",
@@ -374,7 +402,7 @@ class ApplicationTest {
                     "name": "Build",
                     "html_url": "https://github.com/wireapp/github-app/actions/runs/$WORKFLOW_RUN_ID",
                     "head_branch": "main",
-                    "head_sha": "1234567890abcdef",
+                    "head_sha": "$WORKFLOW_HEAD_SHA",
                     "status": "in_progress",
                     "conclusion": null
                 },

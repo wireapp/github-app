@@ -7,9 +7,6 @@ import com.wire.github.util.KtxSerializer
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
-import com.wire.sdk.model.QualifiedId
-import com.wire.sdk.model.WireMessage
-import com.wire.sdk.service.WireApplicationManager
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
@@ -23,7 +20,6 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.serialization.ExperimentalSerializationApi
-import java.util.UUID
 import org.koin.core.context.GlobalContext
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -59,15 +55,7 @@ fun Application.configureRouting() {
             // Payload
             val payload = call.receiveText()
 
-            // Validation of received signature
-            val isSignatureValid = signatureValidator.isValid(
-                signature = signature,
-                payload = payload,
-                secret = requireNotNull(ENV_VAR_GITHUB_WEBHOOK_SECRET) {
-                    "GHAPP_GITHUB_WEBHOOK_SECRET must be set to validate GitHub webhooks"
-                }
-            )
-            if (!isSignatureValid) {
+            if (!signatureValidator.isValidGithubWebhookSignature(signature, payload)) {
                 return@post call.respond(
                     status = HttpStatusCode.Forbidden,
                     message = "Invalid GitHub webhook signature"
@@ -77,19 +65,26 @@ fun Application.configureRouting() {
             val response = KtxSerializer.json.decodeFromString<GitHubResponse>(payload)
             gitHubWebhookManager.markRepositoryActive(response.repository.fullName)
 
-            // Handle event response and send message
-            val messageTemplate = templateHandler.handleEvent(
-                event = event,
-                response = response
-            )
-
-            messageTemplate?.let { message ->
-                wireAppSdk.sendGitHubMessage(
+            if (event == EVENT_WORKFLOW_RUN) {
+                wireAppSdk.sendCommitCiMessage(
                     gitHubWebhookManager = gitHubWebhookManager,
-                    event = event,
                     response = response,
-                    text = message
+                    workflowRun = response.workflowRun
                 )
+            } else {
+                // Handle event response and send message
+                val messageTemplate = templateHandler.handleEvent(
+                    event = event,
+                    response = response
+                )
+
+                messageTemplate?.let { message ->
+                    wireAppSdk.sendGitHubMessage(
+                        gitHubWebhookManager = gitHubWebhookManager,
+                        response = response,
+                        text = message
+                    )
+                }
             }
 
             return@post call.response.status(HttpStatusCode.OK)
@@ -97,96 +92,16 @@ fun Application.configureRouting() {
     }
 }
 
-private fun WireAppSdk.sendGitHubMessage(
-    gitHubWebhookManager: GitHubWebhookManager,
-    event: String,
-    response: GitHubResponse,
-    text: String
-) {
-    gitHubWebhookManager
-        .conversationsForRepository(response.repository.fullName)
-        .forEach { conversationId ->
-            sendGitHubMessage(
-                gitHubWebhookManager = gitHubWebhookManager,
-                event = event,
-                response = response,
-                conversationId = conversationId,
-                text = text
-            )
+private fun SignatureValidator.isValidGithubWebhookSignature(
+    signature: String,
+    payload: String
+): Boolean =
+    isValid(
+        signature = signature,
+        payload = payload,
+        secret = requireNotNull(ENV_VAR_GITHUB_WEBHOOK_SECRET) {
+            "GHAPP_GITHUB_WEBHOOK_SECRET must be set to validate GitHub webhooks"
         }
-}
-
-private fun WireAppSdk.sendGitHubMessage(
-    gitHubWebhookManager: GitHubWebhookManager,
-    event: String,
-    response: GitHubResponse,
-    conversationId: QualifiedId,
-    text: String
-) {
-    val workflowRunId = response.workflowRun?.id
-    val messageId = if (event == EVENT_WORKFLOW_RUN && workflowRunId != null) {
-        getApplicationManager().sendWorkflowRunMessage(
-            gitHubWebhookManager = gitHubWebhookManager,
-            repositoryFullName = response.repository.fullName,
-            workflowRunId = workflowRunId,
-            conversationId = conversationId,
-            text = text
-        )
-    } else {
-        getApplicationManager().sendTextMessage(
-            conversationId = conversationId,
-            text = text
-        )
-    }
-
-    if (event == EVENT_WORKFLOW_RUN && workflowRunId != null) {
-        gitHubWebhookManager.rememberWorkflowRunMessageId(
-            fullName = response.repository.fullName,
-            workflowRunId = workflowRunId,
-            conversationId = conversationId,
-            messageId = messageId
-        )
-    }
-}
-
-private fun WireApplicationManager.sendWorkflowRunMessage(
-    gitHubWebhookManager: GitHubWebhookManager,
-    repositoryFullName: String,
-    workflowRunId: Long,
-    conversationId: QualifiedId,
-    text: String
-): UUID {
-    val replacingMessageId = gitHubWebhookManager.workflowRunMessageId(
-        fullName = repositoryFullName,
-        workflowRunId = workflowRunId,
-        conversationId = conversationId
-    )
-
-    val message = replacingMessageId
-        ?.let {
-            WireMessage.TextEdited.create(
-                replacingMessageId = it,
-                conversationId = conversationId,
-                text = text
-            )
-        }
-        ?: WireMessage.Text.create(
-            conversationId = conversationId,
-            text = text
-        )
-
-    return sendMessage(message = message)
-}
-
-private fun WireApplicationManager.sendTextMessage(
-    conversationId: QualifiedId,
-    text: String
-): UUID =
-    sendMessage(
-        message = WireMessage.Text.create(
-            conversationId = conversationId,
-            text = text
-        )
     )
 
 private const val EVENT_WORKFLOW_RUN = "workflow_run"

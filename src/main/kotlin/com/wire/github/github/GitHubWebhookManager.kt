@@ -3,6 +3,7 @@ package com.wire.github.github
 import com.wire.github.util.ENV_VAR_GITHUB_REPO_INACTIVITY_SECONDS
 import com.wire.github.util.ENV_VAR_GITHUB_WEBHOOK_SECRET
 import com.wire.github.util.ENV_VAR_HOST
+import com.wire.github.util.KtxSerializer
 import com.wire.github.util.toStorageKey
 import com.wire.sdk.model.QualifiedId
 import io.lettuce.core.api.StatefulRedisConnection
@@ -10,6 +11,8 @@ import java.time.Clock
 import java.util.UUID
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import org.koin.core.context.GlobalContext
 import org.slf4j.LoggerFactory
 
@@ -37,6 +40,20 @@ class GitHubWebhookManager(
     data class RegistrationResult(
         val newlySubscribed: Boolean,
         val webhookId: Long
+    )
+
+    data class CommitCiSummary(
+        val messageId: UUID?,
+        val workflows: List<CommitCiWorkflow>
+    )
+
+    @Serializable
+    data class CommitCiWorkflow(
+        val runId: Long,
+        val name: String,
+        val status: String?,
+        val conclusion: String?,
+        val htmlUrl: String?
     )
 
     fun ensureWebhookForConversation(
@@ -94,24 +111,40 @@ class GitHubWebhookManager(
         storage.set(lastActivityKey(fullName), clock.millis().toString())
     }
 
-    fun workflowRunMessageId(
+    fun updateCommitCiWorkflow(
         fullName: String,
-        workflowRunId: Long,
-        conversationId: QualifiedId
-    ): UUID? =
-        storage
-            .get(workflowRunMessageIdKey(fullName, workflowRunId, conversationId))
-            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+        headSha: String,
+        conversationId: QualifiedId,
+        workflow: CommitCiWorkflow
+    ): CommitCiSummary {
+        val workflowKey = commitCiWorkflowKey(fullName, headSha, conversationId, workflow.runId)
 
-    fun rememberWorkflowRunMessageId(
+        storage.set(workflowKey, KtxSerializer.json.encodeToString(workflow))
+        storage.sadd(
+            commitCiWorkflowIdsKey(fullName, headSha, conversationId),
+            workflow.runId.toString()
+        )
+        rememberCommitCiKey(fullName, workflowKey)
+        rememberCommitCiKey(
+            fullName,
+            commitCiWorkflowIdsKey(fullName, headSha, conversationId)
+        )
+
+        return CommitCiSummary(
+            messageId = commitCiMessageId(fullName, headSha, conversationId),
+            workflows = commitCiWorkflows(fullName, headSha, conversationId)
+        )
+    }
+
+    fun rememberCommitCiMessageId(
         fullName: String,
-        workflowRunId: Long,
+        headSha: String,
         conversationId: QualifiedId,
         messageId: UUID
     ) {
-        val key = workflowRunMessageIdKey(fullName, workflowRunId, conversationId)
+        val key = commitCiMessageIdKey(fullName, headSha, conversationId)
         storage.set(key, messageId.toString())
-        storage.sadd(workflowRunMessageIdsKey(fullName), key)
+        rememberCommitCiKey(fullName, key)
     }
 
     fun cleanupInactiveRepositories() {
@@ -139,10 +172,10 @@ class GitHubWebhookManager(
         storage.del(webhookIdKey(fullName))
         storage.del(conversationsKey(fullName))
         storage.del(lastActivityKey(fullName))
-        storage.smembers(workflowRunMessageIdsKey(fullName)).forEach { key ->
+        storage.smembers(commitCiKeysKey(fullName)).forEach { key ->
             storage.del(key)
         }
-        storage.del(workflowRunMessageIdsKey(fullName))
+        storage.del(commitCiKeysKey(fullName))
         logger.info("Removed inactive GitHub webhook subscription for repository: $fullName")
     }
 
@@ -173,16 +206,69 @@ class GitHubWebhookManager(
     private fun lastActivityKey(fullName: String): String =
         "$REPOSITORY_KEY_PREFIX:$fullName:last_activity"
 
-    private fun workflowRunMessageIdKey(
+    private fun commitCiMessageId(
         fullName: String,
-        workflowRunId: Long,
+        headSha: String,
+        conversationId: QualifiedId
+    ): UUID? =
+        storage
+            .get(commitCiMessageIdKey(fullName, headSha, conversationId))
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
+
+    private fun commitCiWorkflows(
+        fullName: String,
+        headSha: String,
+        conversationId: QualifiedId
+    ): List<CommitCiWorkflow> {
+        val workflows = storage
+            .smembers(commitCiWorkflowIdsKey(fullName, headSha, conversationId))
+            .mapNotNull { workflowRunId ->
+                val runId = workflowRunId.toLongOrNull() ?: return@mapNotNull null
+                val workflowKey = commitCiWorkflowKey(fullName, headSha, conversationId, runId)
+                val workflow = storage.get(workflowKey) ?: return@mapNotNull null
+
+                runCatching {
+                    KtxSerializer.json.decodeFromString<CommitCiWorkflow>(workflow)
+                }.getOrNull()
+            }
+
+        return workflows.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+    }
+
+    private fun rememberCommitCiKey(
+        fullName: String,
+        key: String
+    ) {
+        storage.sadd(commitCiKeysKey(fullName), key)
+    }
+
+    private fun commitCiMessageIdKey(
+        fullName: String,
+        headSha: String,
         conversationId: QualifiedId
     ): String =
-        "$REPOSITORY_KEY_PREFIX:$fullName:workflow_run:$workflowRunId:" +
+        "$REPOSITORY_KEY_PREFIX:$fullName:commit_ci:$headSha:message:" +
             conversationId.toStorageKey()
 
-    private fun workflowRunMessageIdsKey(fullName: String): String =
-        "$REPOSITORY_KEY_PREFIX:$fullName:workflow_run_messages"
+    private fun commitCiWorkflowIdsKey(
+        fullName: String,
+        headSha: String,
+        conversationId: QualifiedId
+    ): String =
+        "$REPOSITORY_KEY_PREFIX:$fullName:commit_ci:$headSha:workflows:" +
+            conversationId.toStorageKey()
+
+    private fun commitCiWorkflowKey(
+        fullName: String,
+        headSha: String,
+        conversationId: QualifiedId,
+        workflowRunId: Long
+    ): String =
+        "$REPOSITORY_KEY_PREFIX:$fullName:commit_ci:$headSha:workflow:$workflowRunId:" +
+            conversationId.toStorageKey()
+
+    private fun commitCiKeysKey(fullName: String): String =
+        "$REPOSITORY_KEY_PREFIX:$fullName:commit_ci_keys"
 
     companion object {
         const val GITHUB_WEBHOOK_PATH = "github/webhook"
