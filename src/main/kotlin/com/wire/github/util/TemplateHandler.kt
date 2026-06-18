@@ -30,7 +30,7 @@ class TemplateHandler {
             populateTemplate(
                 mustache = template,
                 model = response
-            )?.takeIf { it.isNotBlank() }
+            )?.trim()?.takeIf { it.isNotBlank() }
         } catch (exception: MustacheNotFoundException) {
             logger.error("MustacheNotFoundException: $exception")
             null
