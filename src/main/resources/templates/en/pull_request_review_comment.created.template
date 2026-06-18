@@ -1,4 +1,0 @@
-**{{pullRequest.title}}**
-**@{{comment.user.login}}** [commented]({{comment.htmlUrl}}):
-
-{{{comment.body}}}
