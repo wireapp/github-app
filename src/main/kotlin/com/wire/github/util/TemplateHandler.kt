@@ -52,7 +52,7 @@ class TemplateHandler {
                     ?.let { eventTemplatePath(event) }
             EVENT_WORKFLOW_RUN ->
                 response.workflowRun
-                    ?.takeIf { it.successful || it.failed }
+                    ?.takeIf { it.id != null }
                     ?.let { eventTemplatePath(event) }
             else -> response.action?.let {
                 actionTemplatePath(
