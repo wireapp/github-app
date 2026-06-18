@@ -1,3 +1,6 @@
+{{! Fired on the "pull_request_review" event: a reviewer finished a review via "Review changes". }}
+{{! SURPRISE: a bare Approve carries no body, so only the prefix line renders. }}
+{{! Any inline diff-line comments made in the same review arrive as separate pull_request_review_comment events, which we intentionally do not notify on. }}
 {{#review.body}}**[{{repository.fullName}}]** Pull request review **{{pullRequest.title}}** was {{action}} by **{{review.user.login}}**
 
 {{{review.body}}}
