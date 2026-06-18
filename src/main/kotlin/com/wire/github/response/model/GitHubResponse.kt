@@ -14,7 +14,26 @@ data class GitHubResponse(
     val sender: User,
     val compare: String? = null,
     val review: Review? = null,
+    val state: String? = null,
+    val context: String? = null,
+    val description: String? = null,
+    @SerialName("target_url")
+    val targetUrl: String? = null,
+    val sha: String? = null,
     val repository: Repository,
     val created: Boolean? = null,
     val deleted: Boolean? = null
+) {
+    val statusSuccessful: Boolean
+        get() = state == GITHUB_STATUS_SUCCESS
+
+    val statusFailed: Boolean
+        get() = state in GITHUB_STATUS_FAILURE_STATES
+}
+
+private const val GITHUB_STATUS_SUCCESS = "success"
+
+private val GITHUB_STATUS_FAILURE_STATES = setOf(
+    "failure",
+    "error"
 )
