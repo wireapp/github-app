@@ -1,0 +1,7 @@
+{{! Rendered when a PR link is pasted into the chat — an active fetch of the PR's current state, not a GitHub webhook event. }}
+{{! Always announces the PR. The body is shown only when the PR is not a draft; a draft shows the header alone, and its body arrives later via pull_request.ready_for_review once it is marked ready. }}
+[**{{pullRequest.title}}**]({{pullRequest.htmlUrl}}) (+{{pullRequest.additions}}/-{{pullRequest.deletions}}) by **@{{pullRequest.user.login}}**
+{{^pullRequest.draft}}
+
+{{{pullRequest.body}}}
+{{/pullRequest.draft}}

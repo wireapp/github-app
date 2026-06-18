@@ -4,6 +4,7 @@ import com.github.mustachejava.DefaultMustacheFactory
 import com.github.mustachejava.Mustache
 import com.github.mustachejava.MustacheNotFoundException
 import com.wire.github.response.model.GitHubResponse
+import com.wire.github.response.model.PullRequest
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Locale
@@ -22,20 +23,38 @@ class TemplateHandler {
             response = response
         ) ?: return null
 
-        return try {
-            val template = compileTemplate(
-                path = path
-            )
+        return render(
+            path = path,
+            model = response
+        )
+    }
 
+    /**
+     * Renders the message for a pull request fetched directly (e.g. when its link is
+     * pasted into the chat) rather than received via a webhook event.
+     */
+    fun renderPullRequest(pullRequest: PullRequest): String? =
+        render(
+            path = actionTemplatePath(
+                event = PULL_REQUEST_EVENT,
+                action = LINKED_ACTION
+            ),
+            model = mapOf(PULL_REQUEST_MODEL_KEY to pullRequest)
+        )
+
+    private fun render(
+        path: String,
+        model: Any
+    ): String? =
+        try {
             populateTemplate(
-                mustache = template,
-                model = response
+                mustache = compileTemplate(path = path),
+                model = model
             )?.trim()?.takeIf { it.isNotBlank() }
         } catch (exception: MustacheNotFoundException) {
             logger.error("MustacheNotFoundException: $exception")
             null
         }
-    }
 
     private fun templatePath(
         event: String,
@@ -86,7 +105,7 @@ class TemplateHandler {
 
     private fun populateTemplate(
         mustache: Mustache,
-        model: GitHubResponse
+        model: Any
     ): String? =
         StringWriter()
             .apply {
@@ -96,6 +115,9 @@ class TemplateHandler {
     private companion object {
         const val LANGUAGE_ENGLISH = "en"
         const val TEMPLATE_DIRECTORY = "templates"
+        const val PULL_REQUEST_EVENT = "pull_request"
+        const val LINKED_ACTION = "linked"
+        const val PULL_REQUEST_MODEL_KEY = "pullRequest"
         const val EVENT_CHECK_SUITE = "check_suite"
         const val EVENT_STATUS = "status"
         const val EVENT_WORKFLOW_RUN = "workflow_run"
