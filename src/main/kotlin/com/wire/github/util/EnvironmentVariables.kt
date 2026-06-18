@@ -41,12 +41,6 @@ val ENV_VAR_HOST: String = System
 val ENV_VAR_GITHUB_CLIENT_ID: String? = System.getenv("GHAPP_GITHUB_CLIENT_ID")
 
 /**
- * GitHub App client secret. Kept available for GitHub App flows that need OAuth,
- * though repository webhook provisioning authenticates with the private key.
- */
-val ENV_VAR_GITHUB_CLIENT_SECRET: String? = System.getenv("GHAPP_GITHUB_CLIENT_SECRET")
-
-/**
  * Path to the GitHub App private key in PEM format.
  */
 val ENV_VAR_GITHUB_PRIVATE_KEY: String?
