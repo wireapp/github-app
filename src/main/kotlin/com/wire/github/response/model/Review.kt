@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Review(
-    val body: String,
+    val body: String? = null,
     val user: User,
     val state: String
 )
