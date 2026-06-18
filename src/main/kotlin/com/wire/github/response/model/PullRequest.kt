@@ -8,8 +8,8 @@ data class PullRequest(
     @SerialName("html_url")
     val htmlUrl: String,
     val title: String,
-    val body: String,
+    val body: String? = null,
     val user: User,
-    val merged: Boolean,
+    val merged: Boolean? = false,
     val number: Int
 )
