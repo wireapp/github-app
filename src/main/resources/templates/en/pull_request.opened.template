@@ -1,5 +1,8 @@
-🟢 **New Pull Request Opened!** by **{{pullRequest.user.login}}**
+{{! Fired on the "pull_request" event (action=opened): a PR was newly opened. }}
+{{! Gated on NOT draft: a PR opened directly as a draft renders nothing and sends no notification. It is announced later by pull_request.ready_for_review.template when the draft is marked ready. }}
+{{! The reopened action (action=reopened) has no template and is intentionally silent. }}
+{{^pullRequest.draft}}
+[**{{pullRequest.title}}**]({{pullRequest.htmlUrl}}) (+{{pullRequest.additions}}/-{{pullRequest.deletions}}) by **@{{pullRequest.user.login}}**
 
-📦 **Repository:** {{repository.fullName}}
-🔖 **Title:** {{pullRequest.title}}
-🔗 **PR Link:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}})
+{{{pullRequest.body}}}
+{{/pullRequest.draft}}

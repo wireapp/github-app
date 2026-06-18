@@ -1,4 +1,3 @@
-**[{{repository.fullName}}]** Issue **{{{issue.title}}}** {{action}} by **{{sender.login}}**
-
-[issue]({{issue.htmlUrl}})
-—
+{{! Fired on the "issues" event (action=closed): an issue — never a pull request — was closed. }}
+{{! Closing or merging a PR comes through pull_request.closed instead. }}
+[**{{{issue.title}}}**]({{issue.htmlUrl}}) {{action}} by **@{{sender.login}}**

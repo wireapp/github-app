@@ -1,7 +1,4 @@
-**[{{repository.fullName}}]** New comment on commit {{comment.id}}
+{{! Fired on the "commit_comment" event (action=created): a comment left directly on a commit via GitHub's commit view. This is NOT a PR review comment and NOT an issue/PR conversation comment. }}
+**@{{comment.user.login}}** [commented on a commit]({{comment.htmlUrl}}):
 
-**Comment on line {{comment.line}} by {{comment.user.login}}**
 {{{comment.body}}}
-
-[comment]({{comment.htmlUrl}})
-—
