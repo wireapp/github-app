@@ -1,5 +1,6 @@
 package com.wire.github.github
 
+import com.wire.github.response.model.PullRequest
 import com.wire.github.util.ENV_VAR_GITHUB_CLIENT_ID
 import com.wire.github.util.ENV_VAR_GITHUB_PRIVATE_KEY
 import com.wire.github.util.KtxSerializer
@@ -57,6 +58,30 @@ class GitHubAppClient(
             webhookUrl = webhookUrl,
             webhookSecret = webhookSecret,
             token = token
+        )
+    }
+
+    fun fetchPullRequest(
+        repository: GitHubRepository,
+        number: Int
+    ): PullRequest {
+        val token = createInstallationAccessToken(repository)
+        val response = send(
+            request = requestBuilder(
+                "/repos/${repository.owner}/${repository.name}/pulls/$number"
+            ).GET()
+                .withBearer(token)
+                .build()
+        )
+
+        require(response.statusCode() in SUCCESS_STATUS_CODES) {
+            "GitHub failed to fetch pull request ${repository.fullName}#$number: " +
+                "${response.statusCode()} ${response.body()}"
+        }
+
+        return KtxSerializer.json.decodeFromString(
+            PullRequest.serializer(),
+            response.body()
         )
     }
 

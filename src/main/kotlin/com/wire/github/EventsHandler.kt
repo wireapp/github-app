@@ -1,8 +1,11 @@
 package com.wire.github
 
+import com.wire.github.github.GitHubAppClient
 import com.wire.github.github.GitHubPullRequestLinkParser
+import com.wire.github.github.GitHubPullRequestReference
 import com.wire.github.github.GitHubRepository
 import com.wire.github.github.GitHubWebhookManager
+import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireEventsHandlerSuspending
 import com.wire.sdk.model.Conversation
 import com.wire.sdk.model.ConversationMember
@@ -14,6 +17,8 @@ import org.slf4j.LoggerFactory
 class EventsHandler : WireEventsHandlerSuspending() {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val gitHubWebhookManager by lazy { GlobalContext.get().get<GitHubWebhookManager>() }
+    private val gitHubAppClient by lazy { GlobalContext.get().get<GitHubAppClient>() }
+    private val templateHandler by lazy { GlobalContext.get().get<TemplateHandler>() }
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         if (wireMessage.text.equals(HELP_COMMAND, ignoreCase = true)) {
@@ -32,20 +37,26 @@ class EventsHandler : WireEventsHandlerSuspending() {
             )
             return
         }
-        val repositories = GitHubPullRequestLinkParser.parse(wireMessage.text)
-        if (repositories.isEmpty()) {
+        val pullRequests = GitHubPullRequestLinkParser.parse(wireMessage.text)
+        if (pullRequests.isEmpty()) {
             return
         }
 
+        val conversationId = wireMessage.conversationId
         registerRepositories(
-            repositories = repositories,
-            conversationId = wireMessage.conversationId
-        )?.let { message ->
+            repositories = pullRequests.map { it.repository }.toSet(),
+            conversationId = conversationId
+        )?.let { statusMessage ->
             sendMessage(
-                conversationId = wireMessage.conversationId,
-                text = message
+                conversationId = conversationId,
+                text = statusMessage
             )
         }
+
+        announcePullRequests(
+            pullRequests = pullRequests,
+            conversationId = conversationId
+        )
     }
 
     override suspend fun onAppAddedToConversation(
@@ -102,6 +113,33 @@ class EventsHandler : WireEventsHandlerSuspending() {
         }
 
         return results.takeIf { it.isNotEmpty() }?.joinToString("\n")
+    }
+
+    private fun announcePullRequests(
+        pullRequests: Set<GitHubPullRequestReference>,
+        conversationId: QualifiedId
+    ) {
+        pullRequests.forEach { reference ->
+            val pullRequest = runCatching {
+                gitHubAppClient.fetchPullRequest(
+                    repository = reference.repository,
+                    number = reference.number
+                )
+            }.onFailure { exception ->
+                logger.warn(
+                    "Failed to fetch pull request " +
+                        "${reference.repository.fullName}#${reference.number}",
+                    exception
+                )
+            }.getOrNull() ?: return@forEach
+
+            templateHandler.renderPullRequest(pullRequest)?.let { message ->
+                sendMessage(
+                    conversationId = conversationId,
+                    text = message
+                )
+            }
+        }
     }
 
     private fun sendMessage(
