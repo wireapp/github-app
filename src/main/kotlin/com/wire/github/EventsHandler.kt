@@ -32,20 +32,20 @@ class EventsHandler : WireEventsHandlerSuspending() {
             )
             return
         }
-
         val repositories = GitHubPullRequestLinkParser.parse(wireMessage.text)
         if (repositories.isEmpty()) {
             return
         }
 
-        val message = registerRepositories(
+        registerRepositories(
             repositories = repositories,
             conversationId = wireMessage.conversationId
-        )
-        sendMessage(
-            conversationId = wireMessage.conversationId,
-            text = message
-        )
+        )?.let { message ->
+            sendMessage(
+                conversationId = wireMessage.conversationId,
+                text = message
+            )
+        }
     }
 
     override suspend fun onAppAddedToConversation(
@@ -84,8 +84,12 @@ class EventsHandler : WireEventsHandlerSuspending() {
                     conversationId = conversationId
                 )
             }.fold(
-                onSuccess = {
-                    "Receiving pull request notifications for `${repository.fullName}`."
+                onSuccess = { result ->
+                    if (result.newlySubscribed) {
+                        "Receiving pull request notifications for `${repository.fullName}`."
+                    } else {
+                        null
+                    }
                 },
                 onFailure = { exception ->
                     logger.warn(

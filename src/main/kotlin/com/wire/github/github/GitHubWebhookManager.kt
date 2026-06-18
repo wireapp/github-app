@@ -34,22 +34,45 @@ class GitHubWebhookManager(
         )
     }
 
+    data class RegistrationResult(
+        val newlySubscribed: Boolean,
+        val webhookId: Long
+    )
+
     fun ensureWebhookForConversation(
         repository: GitHubRepository,
         conversationId: QualifiedId
-    ): Long {
+    ): RegistrationResult {
         storage.sadd(KNOWN_REPOSITORIES_KEY, repository.fullName)
-        storage.sadd(conversationsKey(repository.fullName), conversationId.toStorageKey())
+
+        val newlySubscribed =
+            storage.sadd(
+                conversationsKey(repository.fullName),
+                conversationId.toStorageKey()
+            ) > 0
+
         markRepositoryActive(repository.fullName)
 
-        return gitHubAppClient
-            .ensureRepositoryWebhook(
-                repository = repository,
-                webhookUrl = webhookUrl(),
-                webhookSecret = githubWebhookSecret()
-            ).also { webhookId ->
-                storage.set(webhookIdKey(repository.fullName), webhookId.toString())
-            }
+        val existingWebhookId = storage.get(webhookIdKey(repository.fullName))?.toLongOrNull()
+        if (existingWebhookId != null) {
+            return RegistrationResult(
+                newlySubscribed = newlySubscribed,
+                webhookId = existingWebhookId
+            )
+        }
+
+        val webhookId = gitHubAppClient.ensureRepositoryWebhook(
+            repository = repository,
+            webhookUrl = webhookUrl(),
+            webhookSecret = githubWebhookSecret()
+        )
+
+        storage.set(webhookIdKey(repository.fullName), webhookId.toString())
+
+        return RegistrationResult(
+            newlySubscribed = newlySubscribed,
+            webhookId = webhookId
+        )
     }
 
     fun conversationsForRepository(fullName: String): List<QualifiedId> =
