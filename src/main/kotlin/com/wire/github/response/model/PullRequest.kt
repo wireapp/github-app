@@ -11,5 +11,7 @@ data class PullRequest(
     val body: String,
     val user: User,
     val merged: Boolean,
-    val number: Int
+    val number: Int,
+    val additions: Int = 0,
+    val deletions: Int = 0
 )
