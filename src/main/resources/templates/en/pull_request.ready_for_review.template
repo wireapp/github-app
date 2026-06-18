@@ -1,0 +1,5 @@
+{{! Fired on the "pull_request" event (action=ready_for_review): a draft PR was marked ready for review. }}
+{{! Mirrors pull_request.opened so a PR that started as a draft is still announced once — at the moment it becomes ready, rather than when it was first opened as a draft. }}
+[**{{pullRequest.title}}**]({{pullRequest.htmlUrl}}) (+{{pullRequest.additions}}/-{{pullRequest.deletions}}) by **@{{pullRequest.user.login}}**
+
+{{{pullRequest.body}}}
