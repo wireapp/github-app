@@ -1,6 +1,4 @@
-**[{{repository.fullName}}]** Pull request review **{{pullRequest.title}}** was commented by **{{comment.user.login}}**
+**{{pullRequest.title}}**
+**@{{comment.user.login}}** [commented]({{comment.htmlUrl}}):
 
 {{{comment.body}}}
-
-[comment]({{comment.htmlUrl}})
-—
