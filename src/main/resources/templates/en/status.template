@@ -1,0 +1,12 @@
+{{#statusSuccessful}}
+✅ **CI Passed!**{{#context}} {{context}}{{/context}}
+{{/statusSuccessful}}
+{{#statusFailed}}
+❌ **CI Failed!**{{#context}} {{context}}{{/context}}
+{{/statusFailed}}
+
+📦 **Repository:** {{repository.fullName}}
+{{#description}}📝 **Status:** {{description}}
+{{/description}}{{#sha}}🔖 **Commit:** `{{sha}}`
+{{/sha}}{{#targetUrl}}🔗 **Details:** {{targetUrl}}
+{{/targetUrl}}

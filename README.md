@@ -26,7 +26,12 @@ Here's a list of features included in this project:
 | Name                                     | Description                                |
 |------------------------------------------|--------------------------------------------|
 | /health                                  | Healthcheck endpoint returning HTTP OK 200. |
-| /{conversation_id}/{conversation_domain} | Webhook endpoint.                          |
+| /github/webhook                          | GitHub App repository webhook endpoint.     |
+
+When someone posts a GitHub pull request link in a Wire conversation, the app
+creates a repository webhook for pull request events and routes future GitHub
+events for that repository back to the conversation. Repository webhooks are
+removed after the configured inactivity period.
 
 ## Building & Running
 
@@ -43,11 +48,21 @@ GHAPP_API_HOST=https://127.0.0.1/github
 GHAPP_SERVER_PORT=8083
 GHAPP_REDIS_HOST=redis://redis
 GHAPP_REDIS_PORT=6380
+GHAPP_GITHUB_CLIENT_ID=Iv1.example
+GHAPP_GITHUB_PRIVATE_KEY_FILE=/run/secrets/github-app-private-key.pem
+GHAPP_GITHUB_WEBHOOK_SECRET=exampleWebhookSecret
+GHAPP_GITHUB_REPO_INACTIVITY_SECONDS=604800
 WIRE_SDK_API_HOST=https://nginz-https.chala.wire.link
 WIRE_SDK_API_TOKEN=myApiToken
 WIRE_SDK_APP_ID=f562e146-dec2-4d85-93c7-7132746b5cca
 WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 ```
+
+The GitHub App must be installed for the organization/repositories it should
+manage and needs repository webhook write permissions. `GHAPP_GITHUB_CLIENT_ID`
+and `GHAPP_GITHUB_PRIVATE_KEY_FILE` are used for GitHub App server-to-server
+authentication; `GHAPP_GITHUB_WEBHOOK_SECRET` is configured on created
+repository webhooks and used to validate incoming GitHub deliveries.
 
 ## Deployment
 Currently, we are only deploying in our Integrations VM.

@@ -113,9 +113,16 @@ tasks {
         environment("GHAPP_SERVER_PORT", "8083")
         environment("GHAPP_REDIS_HOST", "redis://localhost")
         environment("GHAPP_REDIS_PORT", "6379")
+        environment("GHAPP_GITHUB_CLIENT_ID", "dummyClientId")
+        environment("GHAPP_GITHUB_PRIVATE_KEY_FILE", "/dev/null")
+        environment("GHAPP_GITHUB_WEBHOOK_SECRET", "dummyWebhookSecret")
+        environment("GHAPP_GITHUB_REPO_INACTIVITY_SECONDS", "604800")
         environment("WIRE_SDK_API_HOST", "https://nginz-https.chala.wire.link")
         environment("WIRE_SDK_API_TOKEN", "myApiToken")
         environment("WIRE_SDK_APP_ID", "f562e146-dec2-4d85-93c7-7132746b5cca")
-        environment("WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+        environment(
+            "WIRE_SDK_CRYPTOGRAPHY_STORAGE_KEY",
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
+        )
     }
 }

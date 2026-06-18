@@ -9,6 +9,8 @@
 package com.wire.github.util
 
 import java.util.Base64
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.UUID
 
 /**
@@ -32,6 +34,45 @@ val ENV_VAR_HOST: String = System
         "GHAPP_API_HOST",
         "http://0.0.0.0"
     )
+
+/**
+ * GitHub App client ID. Used as the JWT issuer when authenticating as the app.
+ */
+val ENV_VAR_GITHUB_CLIENT_ID: String? = System.getenv("GHAPP_GITHUB_CLIENT_ID")
+
+/**
+ * Path to the GitHub App private key in PEM format.
+ */
+val ENV_VAR_GITHUB_PRIVATE_KEY: String?
+    get() = System
+        .getenv("GHAPP_GITHUB_PRIVATE_KEY_FILE")
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+        ?.let { privateKeyFile ->
+            runCatching { Files.readString(Path.of(privateKeyFile)) }
+                .getOrElse { exception ->
+                    throw IllegalStateException(
+                        "GHAPP_GITHUB_PRIVATE_KEY_FILE points to an unreadable file: " +
+                            privateKeyFile,
+                        exception
+                    )
+                }
+        }
+
+/**
+ * Secret configured on repository webhooks created by this app.
+ */
+val ENV_VAR_GITHUB_WEBHOOK_SECRET: String? = System.getenv("GHAPP_GITHUB_WEBHOOK_SECRET")
+
+/**
+ * Number of seconds a repository may stay inactive before its webhook is removed.
+ */
+val ENV_VAR_GITHUB_REPO_INACTIVITY_SECONDS: Long = System
+    .getenv()
+    .getOrDefault(
+        "GHAPP_GITHUB_REPO_INACTIVITY_SECONDS",
+        "604800"
+    ).toLong()
 
 /**
  * Redis Host URL

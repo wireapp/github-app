@@ -1,6 +1,8 @@
 package com.wire.github.config
 
 import com.wire.github.EventsHandler
+import com.wire.github.github.GitHubAppClient
+import com.wire.github.github.GitHubWebhookManager
 import com.wire.github.util.ENV_VAR_API_HOST
 import com.wire.github.util.ENV_VAR_API_TOKEN
 import com.wire.github.util.ENV_VAR_APPLICATION_ID
@@ -24,6 +26,8 @@ val projectModules = module {
     single(createdAtStart = true) { initWireAppSdk() }
     single { SignatureValidator() }
     single { TemplateHandler() }
+    single { GitHubAppClient() }
+    single { GitHubWebhookManager(gitHubAppClient = get()) }
     single { RedisClient.create("$ENV_VAR_REDIS_HOST:$ENV_VAR_REDIS_PORT") }
     single<StatefulRedisConnection<String, String>> { get<RedisClient>().connect() }
 }

@@ -1,21 +1,19 @@
 package com.wire.github
 
-import com.wire.github.util.ENV_VAR_HOST
-import com.wire.github.util.SessionIdentifierGenerator
-import com.wire.github.util.toStorageKey
+import com.wire.github.github.GitHubPullRequestLinkParser
+import com.wire.github.github.GitHubRepository
+import com.wire.github.github.GitHubWebhookManager
 import com.wire.sdk.WireEventsHandlerSuspending
 import com.wire.sdk.model.Conversation
 import com.wire.sdk.model.ConversationMember
 import com.wire.sdk.model.QualifiedId
 import com.wire.sdk.model.WireMessage
-import io.lettuce.core.api.StatefulRedisConnection
 import org.koin.core.context.GlobalContext
 import org.slf4j.LoggerFactory
 
 class EventsHandler : WireEventsHandlerSuspending() {
     private val logger = LoggerFactory.getLogger(this::class.java)
-    private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
-    private val storage = redisConnection.sync()
+    private val gitHubWebhookManager by lazy { GlobalContext.get().get<GitHubWebhookManager>() }
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         if (wireMessage.text.equals(HELP_COMMAND, ignoreCase = true)) {
@@ -24,22 +22,30 @@ class EventsHandler : WireEventsHandlerSuspending() {
                     "conversationId: ${wireMessage.conversationId}, " +
                     "senderId: ${wireMessage.sender}"
             )
-            val message = formatSetupInstructions(
+            sendMessage(
                 conversationId = wireMessage.conversationId,
-                secret = storage.get(wireMessage.conversationId.toStorageKey())
-            )
-
-            manager.sendMessage(
-                message = WireMessage.Text.create(
-                    conversationId = wireMessage.conversationId,
-                    text = message
-                )
+                text = USAGE_TEXT
             )
             logger.info(
                 "Event is processed successfully. Event: TextMessageReceived (HELP command), " +
                     "conversationId: ${wireMessage.conversationId}"
             )
+            return
         }
+
+        val repositories = GitHubPullRequestLinkParser.parse(wireMessage.text)
+        if (repositories.isEmpty()) {
+            return
+        }
+
+        val message = registerRepositories(
+            repositories = repositories,
+            conversationId = wireMessage.conversationId
+        )
+        sendMessage(
+            conversationId = wireMessage.conversationId,
+            text = message
+        )
     }
 
     override suspend fun onAppAddedToConversation(
@@ -52,16 +58,14 @@ class EventsHandler : WireEventsHandlerSuspending() {
         )
         val message = buildString {
             appendLine(WELCOME_TEXT)
-            appendLine(formatSetupInstructions(conversationId = conversation.id))
+            appendLine(USAGE_TEXT)
             appendLine()
             append("Use the `$HELP_COMMAND` command to see the usage again.")
         }
 
-        manager.sendMessage(
-            message = WireMessage.Text.create(
-                conversationId = conversation.id,
-                text = message
-            )
+        sendMessage(
+            conversationId = conversation.id,
+            text = message
         )
         logger.info(
             "Event is processed successfully. Event: AppAddedToConversation, " +
@@ -69,44 +73,54 @@ class EventsHandler : WireEventsHandlerSuspending() {
         )
     }
 
-    private fun formatSetupInstructions(
-        conversationId: QualifiedId,
-        secret: String? = null
+    private fun registerRepositories(
+        repositories: Set<GitHubRepository>,
+        conversationId: QualifiedId
     ): String {
-        val generatedSecret = secret ?: run {
-            val generated = SessionIdentifierGenerator.generate()
-            storage.set(conversationId.toStorageKey(), generated)
-            generated
+        val results = repositories.map { repository ->
+            runCatching {
+                gitHubWebhookManager.ensureWebhookForConversation(
+                    repository = repository,
+                    conversationId = conversationId
+                )
+            }.fold(
+                onSuccess = {
+                    "Receiving pull request notifications for `${repository.fullName}`."
+                },
+                onFailure = { exception ->
+                    logger.warn(
+                        "Failed to provision GitHub webhook for ${repository.fullName}",
+                        exception
+                    )
+                    "Could not set up pull request notifications for `${repository.fullName}`."
+                }
+            )
         }
 
-        val url = String.format(
-            HOST_URL_PATTERN,
-            ENV_VAR_HOST,
-            conversationId.id,
-            conversationId.domain
-        )
+        return results.joinToString(separator = "\n")
+    }
 
-        val setupInstructions = String.format(
-            "Here is how to set me up:\n\n" +
-                "1. Go to the repository that you would like to connect to\n" +
-                "2. Go to **Settings / Webhooks / Add webhook**\n" +
-                "3. Add **Payload URL**: %s\n" +
-                "4. Set **Content-Type**: application/json\n" +
-                "5. Set **Secret**: %s",
-            url,
-            generatedSecret
+    private fun sendMessage(
+        conversationId: QualifiedId,
+        text: String
+    ) {
+        manager.sendMessage(
+            message = WireMessage.Text.create(
+                conversationId = conversationId,
+                text = text
+            )
         )
-
-        return setupInstructions
     }
 
     private companion object {
-        const val HOST_URL_PATTERN = "%s/%s/%s"
-
         const val WELCOME_TEXT =
             "👋 Hi, I'm GitHub App. Thanks for adding me to the conversation.\n" +
                 "You can use me to receive GitHub notifications in Wire.\n" +
                 "I'm here to help make everyday work a little easier."
+
+        const val USAGE_TEXT =
+            "Post a GitHub pull request link in this conversation and I will set up " +
+                "pull request notifications for that repository."
 
         const val HELP_COMMAND = "/github help"
     }

@@ -1,0 +1,12 @@
+{{#workflowRun.successful}}
+✅ **CI Passed!**{{#workflowRun.name}} {{workflowRun.name}}{{/workflowRun.name}}
+{{/workflowRun.successful}}
+{{#workflowRun.failed}}
+❌ **CI Failed!**{{#workflowRun.name}} {{workflowRun.name}}{{/workflowRun.name}}
+{{/workflowRun.failed}}
+
+📦 **Repository:** {{repository.fullName}}
+{{#workflowRun.headBranch}}🌿 **Branch:** {{workflowRun.headBranch}}
+{{/workflowRun.headBranch}}{{#workflowRun.headSha}}🔖 **Commit:** `{{workflowRun.headSha}}`
+{{/workflowRun.headSha}}{{#workflowRun.htmlUrl}}🔗 **Run:** {{workflowRun.htmlUrl}}
+{{/workflowRun.htmlUrl}}
