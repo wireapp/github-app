@@ -1,0 +1,106 @@
+replicaCount: 1
+
+image:
+  repository: quay.io/wire/github-app
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: "github-app"
+fullnameOverride: "github-app"
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "github-app-account"
+
+podAnnotations: {}
+
+podSecurityContext: {}
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# External secrets configuration
+secrets:
+  secretName: "githubapp-secrets"
+  mountPath: "/etc/secrets"
+
+# Persistent storage configuration
+persistence:
+  enabled: true
+  storageClass: "gp3-automode-nodepool"
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 1
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Environment variables for the application
+env:
+  - name: WIRE_SDK_APP_ID
+    value: ""
+  - name: WIRE_SDK_API_HOST
+    value: ""
+  - name: GHAPP_API_HOST
+    value: ""
+  - name: GHAPP_SERVER_PORT
+    value: ""
+  - name: GHAPP_REDIS_HOST
+    value: ""
+  - name: GHAPP_REDIS_PORT
+    value: ""
+
+# Health check configuration (latest Kubernetes spec)
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+    scheme: HTTP
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 18
