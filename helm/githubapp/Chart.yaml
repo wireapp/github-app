@@ -1,0 +1,9 @@
+apiVersion: v2
+name: githubapp
+description: Wire Github-App - A Helm chart for deploying the Wire Github app
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
+home: https://github.com/wireapp/github-app
+maintainers:
+  - name: Wire Integrations Team
