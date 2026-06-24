@@ -95,5 +95,5 @@ val ENV_VAR_API_HOST: String = System
  * If lost or forgotten, there is no future access to the database.
  * Must be exactly 32 characters
  */
-val ENV_VAR_CRYPTOGRAPHY_STORAGE_PASSWORD: String = System
+val ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY: String = System
     .getenv("WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD")

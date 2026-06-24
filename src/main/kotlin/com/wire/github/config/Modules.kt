@@ -4,12 +4,13 @@ import com.wire.github.EventsHandler
 import com.wire.github.util.ENV_VAR_API_HOST
 import com.wire.github.util.ENV_VAR_API_TOKEN
 import com.wire.github.util.ENV_VAR_APPLICATION_ID
-import com.wire.github.util.ENV_VAR_CRYPTOGRAPHY_STORAGE_PASSWORD
+import com.wire.github.util.ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY
 import com.wire.github.util.ENV_VAR_REDIS_HOST
 import com.wire.github.util.ENV_VAR_REDIS_PORT
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
+import io.ktor.utils.io.core.toByteArray
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
 import org.koin.dsl.module
@@ -31,6 +32,6 @@ private fun wireAppSdk(): WireAppSdk =
         applicationId = ENV_VAR_APPLICATION_ID,
         apiToken = ENV_VAR_API_TOKEN,
         apiHost = ENV_VAR_API_HOST,
-        cryptographyStoragePassword = ENV_VAR_CRYPTOGRAPHY_STORAGE_PASSWORD,
+        cryptographyStorageKey = ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY.toByteArray(),
         wireEventsHandler = EventsHandler()
     )
