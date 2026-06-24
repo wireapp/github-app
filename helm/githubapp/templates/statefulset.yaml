@@ -61,11 +61,11 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.secretName }}
                   key: WIRE_SDK_API_TOKEN
-            - name: WIRE_SDK_CRYPTO_STORAGE_PASSWORD
+            - name: WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secrets.secretName }}
-                  key: WIRE_SDK_CRYPTO_STORAGE_PASSWORD
+                  key: WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD
             {{- end }}
           volumeMounts:
             - name: data

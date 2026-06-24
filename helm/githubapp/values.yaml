@@ -58,19 +58,17 @@ affinity: {}
 
 # Environment variables for the application
 env:
-  - name: PORT
-    value: "8080"
-  - name: WIRE_SDK_APPLICATION_ID
+  - name: WIRE_SDK_APP_ID
     value: ""
   - name: WIRE_SDK_API_HOST
     value: ""
   - name: GHAPP_API_HOST
     value: ""
+  - name: GHAPP_SERVER_PORT
+    value: ""
   - name: GHAPP_REDIS_HOST
     value: ""
   - name: GHAPP_REDIS_PORT
-    value: ""
-  - name: GHAPP_SERVER_PORT
     value: ""
 
 # Health check configuration (latest Kubernetes spec)
