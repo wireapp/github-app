@@ -4,7 +4,7 @@ import com.wire.github.util.ENV_VAR_HOST
 import com.wire.github.util.SessionIdentifierGenerator
 import com.wire.github.util.toStorageKey
 import com.wire.sdk.WireEventsHandlerSuspending
-import com.wire.sdk.model.ConversationData
+import com.wire.sdk.model.Conversation
 import com.wire.sdk.model.ConversationMember
 import com.wire.sdk.model.QualifiedId
 import com.wire.sdk.model.WireMessage
@@ -43,7 +43,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
     }
 
     override suspend fun onAppAddedToConversation(
-        conversation: ConversationData,
+        conversation: Conversation,
         members: List<ConversationMember>
     ) {
         logger.info(
