@@ -4,7 +4,7 @@ import com.wire.github.EventsHandler
 import com.wire.github.util.ENV_VAR_API_HOST
 import com.wire.github.util.ENV_VAR_API_TOKEN
 import com.wire.github.util.ENV_VAR_APPLICATION_ID
-import com.wire.github.util.ENV_VAR_CRYPTOGRAPHY_STORAGE_PASSWORD
+import com.wire.github.util.ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY
 import com.wire.github.util.ENV_VAR_REDIS_HOST
 import com.wire.github.util.ENV_VAR_REDIS_PORT
 import com.wire.github.util.SignatureValidator
@@ -32,6 +32,6 @@ private fun wireAppSdk(): WireAppSdk =
         applicationId = ENV_VAR_APPLICATION_ID,
         apiToken = ENV_VAR_API_TOKEN,
         apiHost = ENV_VAR_API_HOST,
-        cryptographyStorageKey = ENV_VAR_CRYPTOGRAPHY_STORAGE_PASSWORD.toByteArray(),
+        cryptographyStorageKey = ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY.toByteArray(),
         wireEventsHandler = EventsHandler()
     )
