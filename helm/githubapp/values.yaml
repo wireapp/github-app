@@ -29,6 +29,11 @@ secrets:
   secretName: "githubapp-secrets"
   mountPath: "/etc/secrets"
 
+redis:
+  secretName: "githubapp-valkey-secrets"
+  hostKey: "host"
+  portKey: "port"
+
 # Persistent storage configuration
 persistence:
   enabled: true
