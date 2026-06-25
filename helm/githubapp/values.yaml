@@ -66,10 +66,6 @@ env:
     value: ""
   - name: GHAPP_SERVER_PORT
     value: ""
-  - name: GHAPP_REDIS_HOST
-    value: ""
-  - name: GHAPP_REDIS_PORT
-    value: ""
 
 # Health check configuration (latest Kubernetes spec)
 livenessProbe:
