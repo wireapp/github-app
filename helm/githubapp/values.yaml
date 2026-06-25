@@ -29,6 +29,11 @@ secrets:
   secretName: "githubapp-secrets"
   mountPath: "/etc/secrets"
 
+redis:
+  secretName: "githubapp-valkey-secrets"
+  hostKey: "host"
+  portKey: "port"
+
 # Persistent storage configuration
 persistence:
   enabled: true
@@ -65,10 +70,6 @@ env:
   - name: GHAPP_API_HOST
     value: ""
   - name: GHAPP_SERVER_PORT
-    value: ""
-  - name: GHAPP_REDIS_HOST
-    value: ""
-  - name: GHAPP_REDIS_PORT
     value: ""
 
 # Health check configuration (latest Kubernetes spec)
