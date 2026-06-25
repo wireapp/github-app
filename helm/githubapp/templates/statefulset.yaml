@@ -66,6 +66,8 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.secrets.secretName }}
                   key: WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD
+            {{- end }}
+            {{ - if .Values.redis }}
             - name: GHAPP_REDIS_HOST
               valueFrom:
                 secretKeyRef:
@@ -76,7 +78,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.redis.secretName }}
                   key: {{ .Values.redis.portKey }}
-            {{- end }}
+            {{ - end }}
           volumeMounts:
             - name: data
               mountPath: /opt/githubapp/storage
