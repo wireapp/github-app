@@ -33,28 +33,15 @@ val ENV_VAR_HOST: String = System
     )
 
 /**
- * Redis Host URL
- * In case it needs a password, must be included in this same environment variable.
- * Examples:
- * - "redis://host"
- * - "redis://[:password@]host"
+ * Redis Connection URL
+ * Should contain all the necessary information
+ * Example: rediss://username:password@host:port
  */
-val ENV_VAR_REDIS_HOST: String = System
+val ENV_VAR_REDIS_URL: String = System
     .getenv()
     .getOrDefault(
-        "GHAPP_REDIS_HOST",
-        "redis://localhost"
-    )
-
-/**
- * Redis Port Number
- * To used when connecting and also exposed via docker-compose.
- */
-val ENV_VAR_REDIS_PORT: String = System
-    .getenv()
-    .getOrDefault(
-        "GHAPP_REDIS_PORT",
-        "6379"
+        "GHAPP_REDIS_URL",
+        "redis://localhost:6379"
     )
 
 /**

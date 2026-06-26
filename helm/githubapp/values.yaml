@@ -31,8 +31,7 @@ secrets:
 
 redis:
   secretName: "githubapp-valkey-secrets"
-  hostKey: "host"
-  portKey: "port"
+  urlKey: "url"
 
 # Persistent storage configuration
 persistence:

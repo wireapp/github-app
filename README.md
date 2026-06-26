@@ -41,8 +41,7 @@ An example of this project environment variables:
 ```
 GHAPP_API_HOST=https://127.0.0.1/github
 GHAPP_SERVER_PORT=8083
-GHAPP_REDIS_HOST=redis://redis
-GHAPP_REDIS_PORT=6380
+GHAPP_REDIS_URL=redis://username:password@host:port
 WIRE_SDK_API_HOST=https://nginz-https.chala.wire.link
 WIRE_SDK_API_TOKEN=myApiToken
 WIRE_SDK_APP_ID=f562e146-dec2-4d85-93c7-7132746b5cca
