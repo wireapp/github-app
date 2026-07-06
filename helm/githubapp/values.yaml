@@ -24,6 +24,17 @@ service:
   port: 80
   targetPort: 8080
 
+ingress:
+  enabled: false
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: ""
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
 # External secrets configuration
 secrets:
   secretName: "githubapp-secrets"
