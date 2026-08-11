@@ -1,0 +1,27 @@
+# Production environment overrides
+image:
+  repository: quay.io/wire/github-app
+  tag: "sha-6bd8f51"
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+  - host: github-app.apps-prod.wire.link
+    paths:
+    - path: /
+      pathType: Prefix
+  tls:
+  - hosts:
+    - github-app.apps-prod.wire.link
+    secretName: github-app-tls
+env:
+- name: WIRE_SDK_APP_ID
+  value: "fc3d344b-e9c3-474d-8431-48dc9139822a"
+- name: WIRE_SDK_API_HOST
+  value: "https://prod-nginz-https.wire.com"
+- name: GHAPP_API_HOST
+  value: "https://github-app.apps-prod.wire.link"
+- name: GHAPP_SERVER_PORT
+  value: "8080"
