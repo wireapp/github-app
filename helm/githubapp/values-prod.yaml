@@ -8,13 +8,13 @@ ingress:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt
   hosts:
-  - host: github-app.apps-prod.wire.link
+  - host: github-app.apps-prod.wire.com
     paths:
     - path: /
       pathType: Prefix
   tls:
   - hosts:
-    - github-app.apps-prod.wire.link
+    - github-app.apps-prod.wire.com
     secretName: github-app-tls
 env:
 - name: WIRE_SDK_APP_ID
@@ -22,6 +22,6 @@ env:
 - name: WIRE_SDK_API_HOST
   value: "https://prod-nginz-https.wire.com"
 - name: GHAPP_API_HOST
-  value: "https://github-app.apps-prod.wire.link"
+  value: "https://github-app.apps-prod.wire.com"
 - name: GHAPP_SERVER_PORT
   value: "8080"
