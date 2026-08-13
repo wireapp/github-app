@@ -1,8 +1,8 @@
 {{#pullRequest.merged}}
-🚀 **Pull Request Merged!** by **{{ pullRequest.user.login }}**
+🚀 **Pull Request Merged!** by **{{ sender.login }}**
 {{/pullRequest.merged}}
 {{^pullRequest.merged}}
-❌ **Pull Request Closed!** by **{{ pullRequest.user.login }}**
+❌ **Pull Request Closed!** by **{{ sender.login }}**
 {{/pullRequest.merged}}
 
 📦 **Repository:** {{repository.fullName}}
