@@ -1,5 +1,3 @@
 🟢 **New Pull Request Opened!** by **{{pullRequest.user.login}}**
-
-📦 **Repository:** {{repository.fullName}}
-🔖 **Title:** {{pullRequest.title}}
-🔗 **PR Link:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}})
+**Repository:** {{repository.fullName}}
+**PR:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}}) - {{pullRequest.title}}
