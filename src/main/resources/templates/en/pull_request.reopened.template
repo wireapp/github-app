@@ -1,0 +1,3 @@
+🟢 **New Pull Request Reopened!** by **{{pullRequest.user.login}}**
+**Repository:** {{repository.fullName}}
+**PR:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}}) - {{pullRequest.title}}

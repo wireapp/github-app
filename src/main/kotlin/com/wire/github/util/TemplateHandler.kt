@@ -22,13 +22,14 @@ class TemplateHandler {
                 event = event,
                 action = response.action
             )
+            logger.info("Template found for this action: ${template.name}")
 
             populateTemplate(
                 mustache = template,
                 model = response
             )
         } catch (exception: MustacheNotFoundException) {
-            logger.error("MustacheNotFoundException: $exception")
+            logger.info("MustacheNotFoundException: $exception")
             null
         }
 

@@ -37,7 +37,7 @@ fun Application.configureRouting() {
 
     routing {
         trace {
-            application.log.info(it.buildText())
+            application.log.debug(it.buildText())
         }
 
         get("/health") {

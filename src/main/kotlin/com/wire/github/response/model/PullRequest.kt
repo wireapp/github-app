@@ -10,6 +10,6 @@ data class PullRequest(
     val title: String,
     val body: String,
     val user: User,
-    val merged: Boolean,
+    val merged: Boolean? = null,
     val number: Int
 )

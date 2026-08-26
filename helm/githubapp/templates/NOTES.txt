@@ -37,12 +37,6 @@ MONITORING & DEBUGGING:
 
 CONFIGURATION:
 {{- range .Values.env }}
-{{- if eq .name "WIRE_SDK_ENVIRONMENT" }}
-- Wire SDK Environment: {{ .value | default "Not configured" }}
-{{- end }}
-{{- if eq .name "WIRE_ENV" }}
-- Wire Environment: {{ .value | default "Not configured" }}
-{{- end }}
 {{- if eq .name "PORT" }}
 - Application Port: {{ .value | default "8080" }}
 {{- end }}
