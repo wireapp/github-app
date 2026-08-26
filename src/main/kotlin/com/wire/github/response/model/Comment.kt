@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Comment(
-    val body: String,
+    val body: String? = null,
     val user: User,
     @SerialName("html_url")
     val htmlUrl: String,

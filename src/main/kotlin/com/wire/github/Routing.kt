@@ -22,6 +22,7 @@ import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import java.util.UUID
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerializationException
 import org.koin.core.context.GlobalContext
 
 @Suppress("LongMethod")
@@ -84,7 +85,12 @@ fun Application.configureRouting() {
                 )
             }
 
-            val response = KtxSerializer.json.decodeFromString<GitHubResponse>(payload)
+            val response = try {
+                KtxSerializer.json.decodeFromString<GitHubResponse>(payload)
+            } catch (exception: SerializationException) {
+                application.log.error("Failed to deserialize $event delivery $delivery", exception)
+                return@post call.response.status(HttpStatusCode.BadRequest)
+            }
 
             // Handle event response and send message
             val messageTemplate = templateHandler.handleEvent(
