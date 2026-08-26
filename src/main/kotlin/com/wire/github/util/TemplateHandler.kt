@@ -63,6 +63,7 @@ class TemplateHandler {
             .apply {
                 mustache.execute(PrintWriter(this), model).flush()
             }.toString()
+            .takeIf { it.isNotBlank() }
 
     private companion object {
         const val LANGUAGE_ENGLISH = "en"

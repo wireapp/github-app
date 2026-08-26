@@ -3,6 +3,6 @@
 {{#commits}}
  - {{{message}}}
 {{/commits}}
-[compare]({{compare}})
+**Compare:** [link]({{compare}})
 **Repository:** {{repository.fullName}}
 —{{/commits.isEmpty}}
