@@ -1,7 +1,0 @@
-**[{{repository.fullName}}]** New comment on commit {{comment.id}}
-
-**Comment on line {{comment.line}} by {{comment.user.login}}**
-{{{comment.body}}}
-
-[comment]({{comment.htmlUrl}})
-—
