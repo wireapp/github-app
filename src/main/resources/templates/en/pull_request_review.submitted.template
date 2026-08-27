@@ -1,5 +1,5 @@
 {{#review.body}}
-📝 **Pull request** has been **{{review.state}}** by **{{review.user.login}}**
+{{review.emoji}} **Pull request** update: **{{review.state}}** by **{{review.user.login}}**
 **Repository:** {{repository.fullName}}
 **PR:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}}) - {{pullRequest.title}}
 **Text:** {{{review.body}}}
