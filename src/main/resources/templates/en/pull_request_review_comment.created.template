@@ -1,5 +1,5 @@
-📝 **Pull request review {{pullRequest.title}}** was **commented** by **{{comment.user.login}}**
-**Text:** {{{comment.body}}}
+📝 **Pull request** was **commented** by **{{comment.user.login}}**
 **Repository:** {{repository.fullName}}
 **PR:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}}) - {{pullRequest.title}}
 **Comment:** [link]({{comment.htmlUrl}})
+**Text:** {{{comment.body}}}

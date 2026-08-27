@@ -1,4 +1,5 @@
-📝 **New comment** on issue/PR **{{{issue.title}}}** by **{{sender.login}}**
-**Text:** {{{comment.body}}}
+📝 **New comment** on PR/issue **{{{issue.title}}}** by **{{sender.login}}**
 **Repository:** {{repository.fullName}}
+**PR/issue:** [#{{issue.number}}]({{issue.htmlUrl}}) - {{issue.title}}
 **Comment:** [link]({{comment.htmlUrl}})
+**Text:** {{{comment.body}}}

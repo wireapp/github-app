@@ -1,6 +1,6 @@
 {{#review.body}}
-📝 **Pull request review {{pullRequest.title}}** has been **{{review.state}}** by **{{review.user.login}}**
-**Text:** {{{review.body}}}
+📝 **Pull request** has been **{{review.state}}** by **{{review.user.login}}**
 **Repository:** {{repository.fullName}}
 **PR:** [#{{pullRequest.number}}]({{pullRequest.htmlUrl}}) - {{pullRequest.title}}
+**Text:** {{{review.body}}}
 {{/review.body}}
