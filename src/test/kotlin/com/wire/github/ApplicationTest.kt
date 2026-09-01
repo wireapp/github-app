@@ -1,5 +1,6 @@
 package com.wire.github
 
+import com.wire.github.metrics.UsageMetrics
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
@@ -10,19 +11,24 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
+import io.ktor.client.statement.bodyAsText
 import io.ktor.server.testing.testApplication
 import kotlin.test.Test
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.Assertions.assertEquals
 import io.ktor.client.request.header
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
 import io.lettuce.core.api.sync.RedisCommands
+import io.micrometer.prometheusmetrics.PrometheusConfig
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.loadKoinModules
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
@@ -47,6 +53,8 @@ class ApplicationTest {
                     single { mockRedisClient }
                     single<StatefulRedisConnection<String, String>> { mockRedisConnection }
                     single { mockWireAppSdk }
+                    single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
+                    single { UsageMetrics(registry = get<PrometheusMeterRegistry>()) }
                 }
             )
         }
@@ -66,6 +74,22 @@ class ApplicationTest {
             val response = client.get("/health")
 
             assertEquals(HttpStatusCode.OK, response.status)
+        }
+
+    @Test
+    fun `given app is added to a conversation, when GET metrics, then counter is exposed`() =
+        testApplication {
+            application {
+                module()
+            }
+            GlobalContext.get().get<UsageMetrics>().onAppAddedToConversation()
+
+            val response = client.get("/metrics")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertTrue(
+                response.bodyAsText().contains("githubapp_added_to_conversation_total 1.0")
+            )
         }
 
     @Test
