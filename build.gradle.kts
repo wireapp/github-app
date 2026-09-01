@@ -39,6 +39,10 @@ dependencies {
     implementation(libs.ktor.server.content.negotiation)
     implementation(libs.ktor.server.logging)
 
+    // Metrics
+    implementation(libs.ktor.server.metrics.micrometer)
+    implementation(libs.micrometer.registry.prometheus)
+
     // Serialization
     implementation(libs.ktor.server.serialization)
     implementation(libs.kotlinx.serialization.json)

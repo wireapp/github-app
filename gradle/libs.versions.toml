@@ -12,6 +12,7 @@ wire-sdk-version = "0.2.1"
 redis-version = "6.7.1.RELEASE"
 mustache-version = "0.9.14"
 mockk-version = "1.14.11"
+micrometer-version = "1.16.0"
 shadow = "9.6.1"
 
 [plugins]
@@ -29,6 +30,9 @@ ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref 
 ktor-server-content-negotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor-version" }
 ktor-server-serialization = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor-version" }
 ktor-server-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor-version" }
+# Pinned to the version koin-ktor already forces onto ktor-server-core; 3.2.3 is binary incompatible with it.
+ktor-server-metrics-micrometer = { module = "io.ktor:ktor-server-metrics-micrometer", version = "3.4.0" }
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer-version" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlin-serialization" }
 koin-ktor = { module = "io.insert-koin:koin-ktor", version.ref = "koin-version" }
 koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin-version" }
