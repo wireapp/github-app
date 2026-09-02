@@ -26,6 +26,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
                     "conversationId: ${wireMessage.conversationId}, " +
                     "senderId: ${wireMessage.sender}"
             )
+            usageMetrics.onHelpCommand()
             val message = formatSetupInstructions(
                 conversationId = wireMessage.conversationId,
                 secret = storage.get(wireMessage.conversationId.toStorageKey())

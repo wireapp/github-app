@@ -93,6 +93,24 @@ class ApplicationTest {
         }
 
     @Test
+    fun `given help command is received, when GET metrics, then counter is exposed`() =
+        testApplication {
+            application {
+                module()
+            }
+            val usageMetrics = GlobalContext.get().get<UsageMetrics>()
+            usageMetrics.onHelpCommand()
+            usageMetrics.onHelpCommand()
+
+            val response = client.get("/metrics")
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertTrue(
+                response.bodyAsText().contains("githubapp_help_commands_total 2.0")
+            )
+        }
+
+    @Test
     fun `given received event, when pull_request is created, then validations are passing`() {
         val signatureValidator = mockk<SignatureValidator>()
         every {
