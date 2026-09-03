@@ -111,6 +111,112 @@ class ApplicationTest {
         }
 
     @Test
+    fun `given a delivery is rendered, when GET metrics, then funnel counters are set`() {
+        val signatureValidator = mockk<SignatureValidator>()
+        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+
+        val wireAppSdk = mockk<WireAppSdk>()
+        every {
+            wireAppSdk.getApplicationManager().sendMessage(message = any())
+        } returns UUID.randomUUID()
+
+        val templateHandler = mockk<TemplateHandler>()
+        every {
+            templateHandler.handleEvent(event = any(), response = any())
+        } returns DUMMY_TEMPLATE
+
+        loadKoinModules(
+            module {
+                single { signatureValidator }
+                single { wireAppSdk }
+                single { templateHandler }
+            }
+        )
+
+        testApplication {
+            application {
+                module()
+            }
+
+            client.post("/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.Application.Json)
+                header("X-GitHub-Event", DUMMY_EVENT)
+                header("X-Hub-Signature", "sha1=$DUMMY_SIGNATURE")
+                header("X-GitHub-Delivery", "delivery")
+                setBody(DUMMY_PAYLOAD)
+            }
+
+            val metrics = client.get("/metrics").bodyAsText()
+
+            assertTrue(
+                metrics.contains(
+                    """githubapp_webhook_events_received_total{event="$DUMMY_EVENT"} 1.0"""
+                ),
+                "received counter missing in:\n$metrics"
+            )
+            assertTrue(
+                metrics.contains(
+                    """githubapp_notifications_sent_total{event="$DUMMY_EVENT"} 1.0"""
+                ),
+                "sent counter missing in:\n$metrics"
+            )
+        }
+    }
+
+    @Test
+    fun `given no template for the event, when GET metrics, then unsupported counter is exposed`() {
+        val signatureValidator = mockk<SignatureValidator>()
+        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+
+        val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
+
+        val templateHandler = mockk<TemplateHandler>()
+        every {
+            templateHandler.handleEvent(event = any(), response = any())
+        } returns null
+
+        loadKoinModules(
+            module {
+                single { signatureValidator }
+                single { wireAppSdk }
+                single { templateHandler }
+            }
+        )
+
+        testApplication {
+            application {
+                module()
+            }
+
+            val response = client.post("/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.Application.Json)
+                header("X-GitHub-Event", DUMMY_EVENT)
+                header("X-Hub-Signature", "sha1=$DUMMY_SIGNATURE")
+                header("X-GitHub-Delivery", "delivery")
+                setBody(DUMMY_PAYLOAD)
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            verify(exactly = 0) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
+            }
+
+            val metrics = client.get("/metrics").bodyAsText()
+
+            assertTrue(
+                metrics.contains(
+                    """githubapp_unsupported_events_total{action="created",event="$DUMMY_EVENT"} 1.0"""
+                ),
+                "unsupported counter missing in:\n$metrics"
+            )
+            assertTrue(
+                metrics.contains("githubapp_notifications_sent_total") == false,
+                "nothing should have been sent, but sent counter exists in:\n$metrics"
+            )
+        }
+    }
+
+    @Test
     fun `given received event, when pull_request is created, then validations are passing`() {
         val signatureValidator = mockk<SignatureValidator>()
         every {
