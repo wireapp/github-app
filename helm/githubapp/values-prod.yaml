@@ -1,7 +1,7 @@
 # Production environment overrides
 image:
   repository: quay.io/wire/github-app
-  tag: "sha-9efe83d"
+  tag: "sha-0bf7e0e"
 ingress:
   enabled: true
   className: nginx
