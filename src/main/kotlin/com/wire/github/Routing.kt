@@ -1,5 +1,6 @@
 package com.wire.github
 
+import com.wire.github.metrics.UsageMetrics
 import com.wire.github.response.model.GitHubResponse
 import com.wire.github.util.KtxSerializer
 import com.wire.github.util.SignatureValidator
@@ -20,6 +21,7 @@ import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
+import java.io.IOException
 import java.util.UUID
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -35,6 +37,7 @@ fun Application.configureRouting() {
     val wireAppSdk = GlobalContext.get().get<WireAppSdk>()
     val signatureValidator = GlobalContext.get().get<SignatureValidator>()
     val templateHandler = GlobalContext.get().get<TemplateHandler>()
+    val usageMetrics = GlobalContext.get().get<UsageMetrics>()
 
     routing {
         trace {
@@ -72,18 +75,39 @@ fun Application.configureRouting() {
             val payload = call.receiveText()
 
             // Validation of received signature
-            val isSignatureValid = signatureValidator.isValid(
-                conversationId = conversationId,
-                conversationDomain = conversationDomain,
-                signature = signature,
-                payload = payload
-            )
-            if (!isSignatureValid) {
+            val isSignatureValid = try {
+                signatureValidator.isValid(
+                    conversationId = conversationId,
+                    conversationDomain = conversationDomain,
+                    signature = signature,
+                    payload = payload
+                )
+            } catch (exception: IOException) {
+                application.log.warn(
+                    "No secret stored for conversation $conversationId@$conversationDomain, " +
+                        "rejecting $event delivery $delivery",
+                    exception
+                )
+
+                // A missing secret can never validate on retry, so this is a permanent
+                // rejection (403) rather than a server error (500) GitHub would redeliver.
                 return@post call.respond(
                     status = HttpStatusCode.Forbidden,
                     message = "Invalid Signature for Conversation"
                 )
             }
+            if (!isSignatureValid) {
+                application.log.warn(
+                    "Invalid signature for conversation $conversationId@$conversationDomain, " +
+                        "rejecting $event delivery $delivery"
+                )
+                return@post call.respond(
+                    status = HttpStatusCode.Forbidden,
+                    message = "Invalid Signature for Conversation"
+                )
+            }
+
+            usageMetrics.onWebhookEventReceived(event = event)
 
             val response = try {
                 KtxSerializer.json.decodeFromString<GitHubResponse>(payload)
@@ -98,17 +122,24 @@ fun Application.configureRouting() {
                 response = response
             )
 
-            messageTemplate?.let { message ->
-                wireAppSdk.getApplicationManager().sendMessage(
-                    message = WireMessage.Text.create(
-                        conversationId = QualifiedId(
-                            id = UUID.fromString(conversationId),
-                            domain = conversationDomain
-                        ),
-                        text = message
-                    )
+            if (messageTemplate == null) {
+                usageMetrics.onUnsupportedEvent(
+                    event = event,
+                    action = response.action
                 )
+                return@post call.response.status(HttpStatusCode.OK)
             }
+
+            wireAppSdk.getApplicationManager().sendMessage(
+                message = WireMessage.Text.create(
+                    conversationId = QualifiedId(
+                        id = UUID.fromString(conversationId),
+                        domain = conversationDomain
+                    ),
+                    text = messageTemplate
+                )
+            )
+            usageMetrics.onNotificationSent(event = event)
 
             return@post call.response.status(HttpStatusCode.OK)
         }

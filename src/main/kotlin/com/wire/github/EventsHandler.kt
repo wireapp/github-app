@@ -1,5 +1,6 @@
 package com.wire.github
 
+import com.wire.github.metrics.UsageMetrics
 import com.wire.github.util.ENV_VAR_HOST
 import com.wire.github.util.SessionIdentifierGenerator
 import com.wire.github.util.toStorageKey
@@ -16,6 +17,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
     private val storage = redisConnection.sync()
+    private val usageMetrics = GlobalContext.get().get<UsageMetrics>()
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         if (wireMessage.text.equals(HELP_COMMAND, ignoreCase = true)) {
@@ -24,6 +26,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
                     "conversationId: ${wireMessage.conversationId}, " +
                     "senderId: ${wireMessage.sender}"
             )
+            usageMetrics.onHelpCommand()
             val message = formatSetupInstructions(
                 conversationId = wireMessage.conversationId,
                 secret = storage.get(wireMessage.conversationId.toStorageKey())
@@ -50,6 +53,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
             "Event received. Event: AppAddedToConversation, " +
                 "conversationId: ${conversation.id}"
         )
+        usageMetrics.onAppAddedToConversation()
         val message = buildString {
             appendLine(WELCOME_TEXT)
             appendLine(formatSetupInstructions(conversationId = conversation.id))
