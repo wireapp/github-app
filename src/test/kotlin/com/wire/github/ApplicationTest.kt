@@ -290,6 +290,46 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun `given completed GitHub Actions events, when received, then messages are sent`() {
+        val signatureValidator = mockk<SignatureValidator>()
+        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+
+        val wireAppSdk = mockk<WireAppSdk>()
+        every {
+            wireAppSdk.getApplicationManager().sendMessage(message = any())
+        } returns UUID.randomUUID()
+
+        loadKoinModules(
+            module {
+                single { signatureValidator }
+                single { wireAppSdk }
+            }
+        )
+
+        testApplication {
+            application {
+                configureRouting()
+            }
+
+            listOf("workflow_run", "workflow_job").forEach { event ->
+                val response = client.post("/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                    contentType(ContentType.Application.Json)
+                    header("X-GitHub-Event", event)
+                    header("X-Hub-Signature", "sha1=$DUMMY_SIGNATURE")
+                    header("X-GitHub-Delivery", "delivery-$event")
+                    setBody(TestFixtures.event("$event.completed"))
+                }
+
+                assertEquals(HttpStatusCode.OK, response.status)
+            }
+
+            verify(exactly = 2) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
+            }
+        }
+    }
+
     private companion object {
         val CONVERSATION_ID = QualifiedId(
             id = UUID.randomUUID(),
