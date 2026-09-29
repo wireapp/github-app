@@ -25,7 +25,6 @@ import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import java.io.File
 import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
@@ -319,7 +318,7 @@ class ApplicationTest {
                     header("X-GitHub-Event", event)
                     header("X-Hub-Signature", "sha1=$DUMMY_SIGNATURE")
                     header("X-GitHub-Delivery", "delivery-$event")
-                    setBody(eventFixture("$event.completed"))
+                    setBody(TestFixtures.event("$event.completed"))
                 }
 
                 assertEquals(HttpStatusCode.OK, response.status)
@@ -330,9 +329,6 @@ class ApplicationTest {
             }
         }
     }
-
-    private fun eventFixture(name: String): String =
-        File("src/test/fixtures/events/$name.json").readText()
 
     private companion object {
         val CONVERSATION_ID = QualifiedId(

@@ -5,26 +5,23 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class WorkflowRun(
-    val name: String,
-    val conclusion: String?,
-    val event: String,
-    val actor: User,
+    val name: String? = null,
+    val conclusion: String? = null,
+    val event: String? = null,
+    val actor: User? = null,
     @SerialName("head_branch")
-    val headBranch: String,
+    val headBranch: String? = null,
     @SerialName("html_url")
-    val htmlUrl: String,
+    val htmlUrl: String? = null,
     @SerialName("run_number")
-    val runNumber: Int
+    val runNumber: Int? = null
 ) {
     val emoji: String
-        get() = when (conclusion) {
-            "success" -> "✅"
-            "failure" -> "❌"
-            "cancelled" -> "🚫"
-            "timed_out" -> "⏱️"
-            "action_required" -> "⚠️"
-            "skipped" -> "⏭️"
-            "stale" -> "💤"
-            else -> "ℹ️"
-        }
+        get() = conclusionPresentation(conclusion).emoji
+
+    val conclusionText: String
+        get() = conclusionPresentation(conclusion).text
+
+    val displayName: String
+        get() = name?.takeIf { it.isNotBlank() } ?: "Workflow run"
 }

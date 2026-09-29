@@ -1,5 +1,6 @@
-{{workflowRun.emoji}} **Workflow {{workflowRun.conclusion}}:** [{{{workflowRun.name}}} #{{workflowRun.runNumber}}]({{workflowRun.htmlUrl}})
+{{workflowRun.emoji}} **Workflow {{workflowRun.conclusionText}}:** {{{workflowRun.displayName}}}{{#workflowRun.runNumber}} #{{workflowRun.runNumber}}{{/workflowRun.runNumber}}{{#workflowRun.htmlUrl}} — [view run]({{workflowRun.htmlUrl}}){{/workflowRun.htmlUrl}}
 **Repository:** {{repository.fullName}}
-**Branch:** `{{workflowRun.headBranch}}`
-**Trigger:** {{workflowRun.event}}
-**Started by:** {{workflowRun.actor.login}}
+{{#workflowRun.headBranch}}**Branch:** `{{workflowRun.headBranch}}`
+{{/workflowRun.headBranch}}{{#workflowRun.event}}**Trigger:** {{workflowRun.event}}
+{{/workflowRun.event}}{{#workflowRun.actor}}**Started by:** {{workflowRun.actor.login}}
+{{/workflowRun.actor}}

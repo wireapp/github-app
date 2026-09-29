@@ -1,5 +1,6 @@
 package com.wire.github.util
 
+import com.wire.github.TestFixtures
 import com.wire.github.response.model.Commit
 import com.wire.github.response.model.GitHubResponse
 import com.wire.github.response.model.PullRequest
@@ -8,7 +9,6 @@ import com.wire.github.response.model.Review
 import com.wire.github.response.model.User
 import com.wire.github.response.model.WorkflowJob
 import com.wire.github.response.model.WorkflowRun
-import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
@@ -103,11 +103,11 @@ class TemplateHandlerTest {
     }
 
     @Test
-    fun `does not render a workflow run before it completes`() {
+    fun `does not render a workflow run for an unsupported action`() {
         val response = KtxSerializer.json.decodeFromString<GitHubResponse>(
-            eventFixture("workflow_run.completed")
+            TestFixtures
+                .event("workflow_run.completed")
                 .replace("\"action\": \"completed\"", "\"action\": \"in_progress\"")
-                .replace("\"conclusion\": \"success\"", "\"conclusion\": null")
         )
 
         val message = templateHandler.handleEvent(
@@ -119,11 +119,11 @@ class TemplateHandlerTest {
     }
 
     @Test
-    fun `does not render a workflow job before it completes`() {
+    fun `does not render a workflow job for an unsupported action`() {
         val response = KtxSerializer.json.decodeFromString<GitHubResponse>(
-            eventFixture("workflow_job.completed")
+            TestFixtures
+                .event("workflow_job.completed")
                 .replace("\"action\": \"completed\"", "\"action\": \"in_progress\"")
-                .replace("\"conclusion\": \"failure\"", "\"conclusion\": null")
         )
 
         val message = templateHandler.handleEvent(
@@ -137,35 +137,63 @@ class TemplateHandlerTest {
     @Test
     fun `maps workflow run conclusions to emojis`() {
         mapOf(
-            "success" to "✅",
-            "failure" to "❌",
-            "cancelled" to "🚫",
-            "timed_out" to "⏱️",
-            "action_required" to "⚠️",
-            "skipped" to "⏭️",
-            "stale" to "💤",
-            "neutral" to "ℹ️"
-        ).forEach { (conclusion, emoji) ->
-            assertEquals(emoji, workflowRun(conclusion).emoji)
+            "success" to ("✅" to "succeeded"),
+            "failure" to ("❌" to "failed"),
+            "cancelled" to ("🚫" to "cancelled"),
+            "timed_out" to ("⏱️" to "timed out"),
+            "action_required" to ("⚠️" to "requires action"),
+            "skipped" to ("⏭️" to "skipped"),
+            "stale" to ("💤" to "stale"),
+            "neutral" to ("ℹ️" to "completed")
+        ).forEach { (conclusion, presentation) ->
+            assertEquals(presentation.first, workflowRun(conclusion).emoji)
+            assertEquals(presentation.second, workflowRun(conclusion).conclusionText)
         }
     }
 
     @Test
     fun `maps workflow job conclusions to emojis`() {
         mapOf(
-            "success" to "✅",
-            "failure" to "❌",
-            "cancelled" to "🚫",
-            "skipped" to "⏭️"
-        ).forEach { (conclusion, emoji) ->
-            assertEquals(emoji, workflowJob(conclusion).emoji)
+            "success" to ("✅" to "succeeded"),
+            "failure" to ("❌" to "failed"),
+            "cancelled" to ("🚫" to "cancelled"),
+            "timed_out" to ("⏱️" to "timed out"),
+            "action_required" to ("⚠️" to "requires action"),
+            "skipped" to ("⏭️" to "skipped"),
+            "stale" to ("💤" to "stale"),
+            "neutral" to ("ℹ️" to "completed")
+        ).forEach { (conclusion, presentation) ->
+            assertEquals(presentation.first, workflowJob(conclusion).emoji)
+            assertEquals(presentation.second, workflowJob(conclusion).conclusionText)
         }
     }
 
-    private fun renderFixture(event: String): String? {
-        val fixtureName = "$event.completed"
+    @Test
+    fun `renders a completed workflow run without optional fields`() {
+        val message = renderFixture(
+            event = "workflow_run",
+            fixtureName = "workflow_run.completed.minimal"
+        )
+
+        assertEquals(TestFixtures.message("workflow_run.completed.minimal"), message?.trim())
+    }
+
+    @Test
+    fun `renders a completed workflow job without optional fields`() {
+        val message = renderFixture(
+            event = "workflow_job",
+            fixtureName = "workflow_job.completed.minimal"
+        )
+
+        assertEquals(TestFixtures.message("workflow_job.completed.minimal"), message?.trim())
+    }
+
+    private fun renderFixture(
+        event: String,
+        fixtureName: String = "$event.completed"
+    ): String? {
         val response = KtxSerializer.json.decodeFromString<GitHubResponse>(
-            eventFixture(fixtureName)
+            TestFixtures.event(fixtureName)
         )
 
         return templateHandler.handleEvent(
@@ -174,11 +202,7 @@ class TemplateHandlerTest {
         )
     }
 
-    private fun eventFixture(name: String): String = fixture("events/$name.json")
-
-    private fun messageFixture(name: String): String = fixture("messages/$name.txt").trim()
-
-    private fun fixture(path: String): String = File("src/test/fixtures/$path").readText()
+    private fun messageFixture(name: String): String = TestFixtures.message(name)
 
     private fun reviewResponse(
         body: String?,
@@ -214,7 +238,7 @@ class TemplateHandlerTest {
             )
         )
 
-    private fun workflowRun(conclusion: String) =
+    private fun workflowRun(conclusion: String?) =
         WorkflowRun(
             name = "Build and test",
             conclusion = conclusion,
@@ -225,7 +249,7 @@ class TemplateHandlerTest {
             runNumber = 1
         )
 
-    private fun workflowJob(conclusion: String) =
+    private fun workflowJob(conclusion: String?) =
         WorkflowJob(
             name = "unit-tests",
             conclusion = conclusion,

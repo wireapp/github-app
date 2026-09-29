@@ -1,4 +1,4 @@
-❌ **Job failure:** [unit-tests (JDK 21)](https://github.com/wireapp/example/actions/runs/123456789/job/987654321)
+❌ **Job failed:** unit-tests (JDK 21) — [view job](https://github.com/wireapp/example/actions/runs/123456789/job/987654321)
 **Repository:** wireapp/example
 **Workflow:** Build and test
 **Branch:** `feature/actions-notifications`

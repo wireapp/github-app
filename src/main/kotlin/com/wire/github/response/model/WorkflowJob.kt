@@ -5,21 +5,21 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class WorkflowJob(
-    val name: String,
-    val conclusion: String?,
+    val name: String? = null,
+    val conclusion: String? = null,
     @SerialName("html_url")
-    val htmlUrl: String,
+    val htmlUrl: String? = null,
     @SerialName("workflow_name")
     val workflowName: String? = null,
     @SerialName("head_branch")
     val headBranch: String? = null
 ) {
     val emoji: String
-        get() = when (conclusion) {
-            "success" -> "✅"
-            "failure" -> "❌"
-            "cancelled" -> "🚫"
-            "skipped" -> "⏭️"
-            else -> "ℹ️"
-        }
+        get() = conclusionPresentation(conclusion).emoji
+
+    val conclusionText: String
+        get() = conclusionPresentation(conclusion).text
+
+    val displayName: String
+        get() = name?.takeIf { it.isNotBlank() } ?: "Workflow job"
 }
