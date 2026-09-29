@@ -27,6 +27,27 @@ Here's a list of features included in this project:
 |------------------------------------------|--------------------------------------------|
 | /health                                  | Healthcheck endpoint returning HTTP OK 200. |
 | /{conversation_id}/{conversation_domain} | Webhook endpoint.                          |
+| /actions/{conversation_id}/{conversation_domain} | Send a custom GitHub Actions message. |
+
+### GitHub Actions notifications
+
+Use the reusable composite action to send workflow-composed text to a Wire conversation. The endpoint authenticates with the conversation secret already configured for GitHub webhooks. Store it as a GitHub Actions secret and do not print it in workflow logs. Empty or whitespace-only messages are rejected with `400`; a missing/invalid secret is rejected with `403`.
+
+```yaml
+- name: Notify Wire on failure
+  if: failure() || cancelled()
+  uses: wireapp/github-app/.github/actions/notify-wire@v1
+  with:
+    endpoint: https://github-app.example.com
+    conversation-id: ${{ vars.WIRE_CONVERSATION_ID }}
+    conversation-domain: ${{ vars.WIRE_CONVERSATION_DOMAIN }}
+    secret: ${{ secrets.WIRE_CONVERSATION_SECRET }}
+    text: |
+      CI failed for ${{ github.repository }} on `${{ github.ref_name }}`.
+      Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+```
+
+The action fails the workflow if the notification request fails; callers can opt into `continue-on-error: true` when notification delivery should not affect the job result. Pin the action to a released tag or commit SHA.
 
 ## Building & Running
 

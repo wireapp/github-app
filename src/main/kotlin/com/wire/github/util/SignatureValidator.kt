@@ -3,6 +3,7 @@ package com.wire.github.util
 import io.lettuce.core.api.StatefulRedisConnection
 import java.io.IOException
 import java.util.Locale
+import java.security.MessageDigest
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 import org.koin.core.context.GlobalContext
@@ -10,6 +11,16 @@ import org.koin.core.context.GlobalContext
 class SignatureValidator {
     private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
     private val storage = redisConnection.sync()
+
+    fun isBearerTokenValid(
+        conversationId: String,
+        conversationDomain: String,
+        token: String
+    ): Boolean {
+        val secret = storage.get(conversationId.toStorageKey(domain = conversationDomain))
+            ?: throw IOException("Missing secret for Conversation: $conversationId")
+        return MessageDigest.isEqual(secret.toByteArray(), token.toByteArray())
+    }
 
     @Throws(Exception::class)
     fun isValid(

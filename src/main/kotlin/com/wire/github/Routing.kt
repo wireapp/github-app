@@ -25,6 +25,7 @@ import java.io.IOException
 import java.util.UUID
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.Serializable
 import org.koin.core.context.GlobalContext
 
 @Suppress("LongMethod")
@@ -143,8 +144,52 @@ fun Application.configureRouting() {
 
             return@post call.response.status(HttpStatusCode.OK)
         }
+
+        post("/actions/{$PARAM_CONVERSATION_ID}/{$PARAM_CONVERSATION_DOMAIN}") {
+            val conversationId = call.parameters[PARAM_CONVERSATION_ID]
+                ?: return@post call.respond(HttpStatusCode.BadRequest)
+            val conversationDomain = call.parameters[PARAM_CONVERSATION_DOMAIN]
+                ?: return@post call.respond(HttpStatusCode.BadRequest)
+            val bearerToken = call.request.headers["Authorization"]
+                ?.takeIf { it.startsWith("Bearer ") }
+                ?.removePrefix("Bearer ")
+                ?.takeIf { it.isNotBlank() }
+                ?: return@post call.respond(HttpStatusCode.Forbidden)
+
+            val isAuthorized = try {
+                signatureValidator.isBearerTokenValid(conversationId, conversationDomain, bearerToken)
+            } catch (exception: IOException) {
+                application.log.warn("No secret stored for conversation $conversationId@$conversationDomain")
+                false
+            }
+            if (!isAuthorized) return@post call.respond(HttpStatusCode.Forbidden)
+
+            val request = try {
+                KtxSerializer.json.decodeFromString<ActionsMessageRequest>(call.receiveText())
+            } catch (exception: SerializationException) {
+                return@post call.respond(HttpStatusCode.BadRequest)
+            }
+            if (request.text.isBlank()) return@post call.respond(HttpStatusCode.BadRequest)
+
+            val conversationUuid = try {
+                UUID.fromString(conversationId)
+            } catch (exception: IllegalArgumentException) {
+                return@post call.respond(HttpStatusCode.BadRequest)
+            }
+
+            wireAppSdk.getApplicationManager().sendMessage(
+                message = WireMessage.Text.create(
+                    conversationId = QualifiedId(id = conversationUuid, domain = conversationDomain),
+                    text = request.text
+                )
+            )
+            call.respond(HttpStatusCode.OK)
+        }
     }
 }
 
 private const val PARAM_CONVERSATION_ID = "conversationId"
 private const val PARAM_CONVERSATION_DOMAIN = "conversationDomain"
+
+@Serializable
+private data class ActionsMessageRequest(val text: String)

@@ -290,6 +290,35 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun `given valid bearer secret, when Actions message is posted, then message is sent`() {
+        val signatureValidator = mockk<SignatureValidator>()
+        every {
+            signatureValidator.isBearerTokenValid(
+                CONVERSATION_ID.id.toString(), CONVERSATION_ID.domain, "conversation-secret"
+            )
+        } returns true
+        val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
+        loadKoinModules(
+            module {
+                single { signatureValidator }
+                single { wireAppSdk }
+            }
+        )
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.post("/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer conversation-secret")
+                setBody("""{"text":"CI failed"}""")
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            verify(exactly = 1) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
+        }
+    }
+
     private companion object {
         val CONVERSATION_ID = QualifiedId(
             id = UUID.randomUUID(),

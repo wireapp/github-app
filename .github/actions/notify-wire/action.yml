@@ -1,0 +1,37 @@
+name: Notify Wire
+description: Send a custom message to a Wire conversation through github-app
+inputs:
+  endpoint:
+    description: Base URL of github-app (for example https://github-app.example.com)
+    required: true
+  conversation-id:
+    description: Wire conversation UUID
+    required: true
+  conversation-domain:
+    description: Wire conversation domain
+    required: true
+  secret:
+    description: Conversation secret configured for github-app
+    required: true
+  text:
+    description: Message text to send
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Send message to Wire
+      shell: bash
+      env:
+        GHAPP_ENDPOINT: ${{ inputs.endpoint }}
+        CONVERSATION_ID: ${{ inputs.conversation-id }}
+        CONVERSATION_DOMAIN: ${{ inputs.conversation-domain }}
+        CONVERSATION_SECRET: ${{ inputs.secret }}
+        MESSAGE_TEXT: ${{ inputs.text }}
+      run: |
+        set -euo pipefail
+        python3 -c 'import json, os; print(json.dumps({"text": os.environ["MESSAGE_TEXT"]}))' > "$RUNNER_TEMP/wire-message.json"
+        curl --fail-with-body --silent --show-error \
+          -X POST "${GHAPP_ENDPOINT%/}/actions/${CONVERSATION_ID}/${CONVERSATION_DOMAIN}" \
+          -H "Authorization: Bearer ${CONVERSATION_SECRET}" \
+          -H "Content-Type: application/json" \
+          --data-binary "@$RUNNER_TEMP/wire-message.json"
