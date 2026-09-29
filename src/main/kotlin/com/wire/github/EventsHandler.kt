@@ -96,7 +96,10 @@ class EventsHandler : WireEventsHandlerSuspending() {
                 "2. Go to **Settings / Webhooks / Add webhook**\n" +
                 "3. Add **Payload URL**: %s\n" +
                 "4. Set **Content-Type**: application/json\n" +
-                "5. Set **Secret**: %s",
+                "5. Set **Secret**: %s\n" +
+                "6. Select the repository events you want to receive\n" +
+                "7. For GitHub Actions notifications, select **Workflow runs** and " +
+                "**Workflow jobs**. Completed results will be sent to this conversation.",
             url,
             generatedSecret
         )

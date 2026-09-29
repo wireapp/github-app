@@ -1,0 +1,5 @@
+✅ **Workflow succeeded:** Build and test #42 — [view run](https://github.com/wireapp/example/actions/runs/123456789)
+**Repository:** wireapp/example
+**Branch:** `main`
+**Trigger:** push
+**Started by:** octocat

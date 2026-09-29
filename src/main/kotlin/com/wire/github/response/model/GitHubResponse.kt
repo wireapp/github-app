@@ -15,6 +15,10 @@ data class GitHubResponse(
     val compare: String? = null,
     val review: Review? = null,
     val repository: Repository,
+    @SerialName("workflow_run")
+    val workflowRun: WorkflowRun? = null,
+    @SerialName("workflow_job")
+    val workflowJob: WorkflowJob? = null,
     val created: Boolean? = null,
     val deleted: Boolean? = null
 )

@@ -49,6 +49,19 @@ Use the reusable composite action to send workflow-composed text to a Wire conve
 
 The action fails the workflow if the notification request fails; callers can opt into `continue-on-error: true` when notification delivery should not affect the job result. Pin the action to a released tag or commit SHA.
 
+### GitHub Actions notifications
+
+The existing webhook endpoint supports centralized notifications for these GitHub Actions events:
+
+| GitHub event | Supported action | Notification |
+|--------------|------------------|--------------|
+| Workflow runs (`workflow_run`) | `completed` | One summary for the completed workflow run. |
+| Workflow jobs (`workflow_job`) | `completed` | One notification for each completed job in the workflow run. |
+
+All completed conclusions are reported, including successful, failed, cancelled, skipped, and timed-out
+results when GitHub provides them. Other actions, such as `requested`, `queued`, and `in_progress`, are
+accepted by the endpoint but do not produce a Wire message.
+
 ## Building & Running
 
 To build or run the project, you can use the IDE Run configuration with environment variables.
