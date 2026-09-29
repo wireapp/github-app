@@ -1,0 +1,5 @@
+{{workflowRun.emoji}} **Workflow {{workflowRun.conclusion}}:** [{{{workflowRun.name}}} #{{workflowRun.runNumber}}]({{workflowRun.htmlUrl}})
+**Repository:** {{repository.fullName}}
+**Branch:** `{{workflowRun.headBranch}}`
+**Trigger:** {{workflowRun.event}}
+**Started by:** {{workflowRun.actor.login}}

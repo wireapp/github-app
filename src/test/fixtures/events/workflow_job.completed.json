@@ -1,0 +1,18 @@
+{
+  "action": "completed",
+  "workflow_job": {
+    "name": "unit-tests (JDK 21)",
+    "conclusion": "failure",
+    "html_url": "https://github.com/wireapp/example/actions/runs/123456789/job/987654321",
+    "workflow_name": "Build and test",
+    "head_branch": "feature/actions-notifications"
+  },
+  "repository": {
+    "name": "example",
+    "full_name": "wireapp/example"
+  },
+  "sender": {
+    "login": "octocat",
+    "avatar_url": "https://github.com/images/error/octocat_happy.gif"
+  }
+}

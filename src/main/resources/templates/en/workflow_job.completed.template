@@ -1,0 +1,5 @@
+{{workflowJob.emoji}} **Job {{workflowJob.conclusion}}:** [{{{workflowJob.name}}}]({{workflowJob.htmlUrl}})
+**Repository:** {{repository.fullName}}
+{{#workflowJob.workflowName}}**Workflow:** {{{workflowJob.workflowName}}}
+{{/workflowJob.workflowName}}{{#workflowJob.headBranch}}**Branch:** `{{workflowJob.headBranch}}`
+{{/workflowJob.headBranch}}

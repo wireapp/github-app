@@ -28,6 +28,19 @@ Here's a list of features included in this project:
 | /health                                  | Healthcheck endpoint returning HTTP OK 200. |
 | /{conversation_id}/{conversation_domain} | Webhook endpoint.                          |
 
+### GitHub Actions notifications
+
+The existing webhook endpoint supports centralized notifications for these GitHub Actions events:
+
+| GitHub event | Supported action | Notification |
+|--------------|------------------|--------------|
+| Workflow runs (`workflow_run`) | `completed` | One summary for the completed workflow run. |
+| Workflow jobs (`workflow_job`) | `completed` | One notification for each completed job in the workflow run. |
+
+All completed conclusions are reported, including successful, failed, cancelled, skipped, and timed-out
+results when GitHub provides them. Other actions, such as `requested`, `queued`, and `in_progress`, are
+accepted by the endpoint but do not produce a Wire message.
+
 ## Building & Running
 
 To build or run the project, you can use the IDE Run configuration with environment variables.

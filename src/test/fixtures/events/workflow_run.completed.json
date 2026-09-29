@@ -1,0 +1,23 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "name": "Build and test",
+    "conclusion": "success",
+    "event": "push",
+    "actor": {
+      "login": "octocat",
+      "avatar_url": "https://github.com/images/error/octocat_happy.gif"
+    },
+    "head_branch": "main",
+    "html_url": "https://github.com/wireapp/example/actions/runs/123456789",
+    "run_number": 42
+  },
+  "repository": {
+    "name": "example",
+    "full_name": "wireapp/example"
+  },
+  "sender": {
+    "login": "octocat",
+    "avatar_url": "https://github.com/images/error/octocat_happy.gif"
+  }
+}
