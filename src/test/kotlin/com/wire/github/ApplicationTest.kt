@@ -444,6 +444,7 @@ class ApplicationTest {
                 }
 
                 assertEquals(HttpStatusCode.Unauthorized, response.status)
+                assertEquals("Bearer authorization is required", response.bodyAsText())
                 verify(exactly = 0) { actionsTokenValidator.isValid(any(), any(), any()) }
                 verify(exactly = 0) {
                     wireAppSdk.getApplicationManager().sendMessage(message = any())
@@ -461,13 +462,14 @@ class ApplicationTest {
             val response = client.postActionsMessage()
 
             assertEquals(HttpStatusCode.Forbidden, response.status)
+            assertEquals("Invalid conversation credentials", response.bodyAsText())
             verify(exactly = 0) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
         }
     }
 
     @Test
     fun `Actions message with invalid text payload is a bad request`() {
-        listOf("{", "{}", """{"body":"CI failed"}""", """{"text":"  "}""").forEach { payload ->
+        listOf("{", "{}", """{"body":"CI failed"}""").forEach { payload ->
             val (_, wireAppSdk) = loadActionsDependencies(tokenValid = true)
 
             testApplication {
@@ -475,9 +477,26 @@ class ApplicationTest {
                 val response = client.postActionsMessage(payload = payload)
 
                 assertEquals(HttpStatusCode.BadRequest, response.status)
+                assertEquals("Invalid JSON payload", response.bodyAsText())
                 verify(exactly = 0) {
                     wireAppSdk.getApplicationManager().sendMessage(message = any())
                 }
+            }
+        }
+    }
+
+    @Test
+    fun `Actions message with blank text is a bad request`() {
+        val (_, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.postActionsMessage(payload = """{"text":"  "}""")
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertEquals("Text must not be blank", response.bodyAsText())
+            verify(exactly = 0) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
             }
         }
     }
@@ -497,6 +516,7 @@ class ApplicationTest {
             }
 
             assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
+            assertEquals("Content-Type must be application/json", response.bodyAsText())
             verify(exactly = 0) { actionsTokenValidator.isValid(any(), any(), any()) }
             verify(exactly = 0) {
                 wireAppSdk.getApplicationManager().sendMessage(message = any())
@@ -517,6 +537,7 @@ class ApplicationTest {
             }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertEquals("Invalid conversation ID", response.bodyAsText())
             verify(exactly = 0) { actionsTokenValidator.isValid(any(), any(), any()) }
             verify(exactly = 0) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
         }

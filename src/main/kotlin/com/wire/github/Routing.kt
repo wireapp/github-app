@@ -167,37 +167,46 @@ private fun Route.configureActionsRoute(
 ) {
     post("/actions/{$PARAM_CONVERSATION_ID}/{$PARAM_CONVERSATION_DOMAIN}") {
         val conversationId = call.parameters[PARAM_CONVERSATION_ID]
-            ?: return@post call.response.status(HttpStatusCode.BadRequest)
+            ?: return@post call.respondActionsError(
+                HttpStatusCode.BadRequest,
+                "Missing conversation ID"
+            )
         val conversationDomain = call.parameters[PARAM_CONVERSATION_DOMAIN]
-            ?: return@post call.response.status(HttpStatusCode.BadRequest)
+            ?: return@post call.respondActionsError(
+                HttpStatusCode.BadRequest,
+                "Missing conversation domain"
+            )
         val conversationUuid = runCatching { UUID.fromString(conversationId) }.getOrNull()
-            ?: return@post call.response.status(HttpStatusCode.BadRequest)
+            ?: return@post call.respondActionsError(
+                HttpStatusCode.BadRequest,
+                "Invalid conversation ID"
+            )
 
         if (!call.hasJsonContentType()) {
-            return@post call.response.status(HttpStatusCode.UnsupportedMediaType)
+            return@post call.respondActionsError(
+                HttpStatusCode.UnsupportedMediaType,
+                "Content-Type must be application/json"
+            )
         }
 
         val bearerToken = call.request.headers[HttpHeaders.Authorization].toBearerToken()
-            ?: return@post call.response.status(HttpStatusCode.Unauthorized)
+            ?: return@post call.respondActionsError(
+                HttpStatusCode.Unauthorized,
+                "Bearer authorization is required"
+            )
 
         if (!actionsTokenValidator.isValid(conversationId, conversationDomain, bearerToken)) {
             application.log.warn(
                 "Invalid Actions token for conversation $conversationId@$conversationDomain"
             )
-            return@post call.response.status(HttpStatusCode.Forbidden)
-        }
-
-        val request = try {
-            KtxSerializer.json.decodeFromString<ActionsNotificationRequest>(call.receiveText())
-        } catch (exception: SerializationException) {
-            application.log.debug(
-                "Invalid Actions payload for conversation $conversationId@$conversationDomain",
-                exception
+            return@post call.respondActionsError(
+                HttpStatusCode.Forbidden,
+                "Invalid conversation credentials"
             )
-            return@post call.response.status(HttpStatusCode.BadRequest)
         }
 
-        if (request.text.isBlank()) return@post call.response.status(HttpStatusCode.BadRequest)
+        val request = call.receiveActionsRequest(conversationId, conversationDomain)
+            ?: return@post
 
         wireAppSdk.getApplicationManager().sendMessage(
             message = WireMessage.Text.create(
@@ -210,6 +219,36 @@ private fun Route.configureActionsRoute(
         )
         call.response.status(HttpStatusCode.OK)
     }
+}
+
+private suspend fun ApplicationCall.receiveActionsRequest(
+    conversationId: String,
+    conversationDomain: String
+): ActionsNotificationRequest? {
+    val request = try {
+        KtxSerializer.json.decodeFromString<ActionsNotificationRequest>(receiveText())
+    } catch (exception: SerializationException) {
+        application.log.debug(
+            "Invalid Actions payload for conversation $conversationId@$conversationDomain",
+            exception
+        )
+        respondActionsError(HttpStatusCode.BadRequest, "Invalid JSON payload")
+        return null
+    }
+
+    return if (request.text.isBlank()) {
+        respondActionsError(HttpStatusCode.BadRequest, "Text must not be blank")
+        null
+    } else {
+        request
+    }
+}
+
+private suspend fun ApplicationCall.respondActionsError(
+    status: HttpStatusCode,
+    message: String
+) {
+    respondText(text = message, status = status)
 }
 
 private fun ApplicationCall.hasJsonContentType(): Boolean =
