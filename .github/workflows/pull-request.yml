@@ -30,24 +30,3 @@ jobs:
           path: |
             **/build/reports/
             **/build/test-results/
-
-  notify-wire-staging:
-    if: github.event_name == 'workflow_dispatch'
-    needs: tests
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-
-      - name: Send test notification to Wire
-        uses: ./.github/actions/notify-wire
-        with:
-          webhook-url: ${{ secrets.WIRE_WEBHOOK_URL }}
-          token: ${{ secrets.WIRE_ACTIONS_TOKEN }}
-          text: |
-            ✅ notify-wire staging test
-            Repository: ${{ github.repository }}
-            Ref: ${{ github.ref_name }}
-            Commit: ${{ github.sha }}
-            Actor: ${{ github.actor }}
-            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
