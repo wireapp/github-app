@@ -2,6 +2,7 @@ package com.wire.github.config
 
 import com.wire.github.EventsHandler
 import com.wire.github.metrics.UsageMetrics
+import com.wire.github.util.ActionsTokenValidator
 import com.wire.github.util.ENV_VAR_API_HOST
 import com.wire.github.util.ENV_VAR_API_TOKEN
 import com.wire.github.util.ENV_VAR_APPLICATION_ID
@@ -24,6 +25,7 @@ val projectModules = module {
         }
     }
     single { SignatureValidator() }
+    single { ActionsTokenValidator(redisConnection = get()) }
     single { TemplateHandler() }
     single { RedisClient.create(ENV_VAR_REDIS_URL) }
     single<StatefulRedisConnection<String, String>> { get<RedisClient>().connect() }

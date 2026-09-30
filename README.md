@@ -23,35 +23,16 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 
 Here's a list of features included in this project:
 
-| Name                                     | Description                                |
-|------------------------------------------|--------------------------------------------|
-| /health                                  | Healthcheck endpoint returning HTTP OK 200. |
-| /{conversation_id}/{conversation_domain} | Webhook endpoint.                          |
-| /actions/{conversation_id}/{conversation_domain} | Send a custom GitHub Actions message. |
+| Name                                                   | Description                                      |
+|--------------------------------------------------------|--------------------------------------------------|
+| `/health`                                              | Healthcheck endpoint returning HTTP OK 200.      |
+| `/{conversation_id}/{conversation_domain}`             | Receive signed GitHub repository webhooks.       |
+| `/actions/{conversation_id}/{conversation_domain}`     | Receive workflow-authored GitHub Actions text.   |
 
-### GitHub Actions notifications
+### Repository webhook notifications
 
-Use the reusable composite action to send workflow-composed text to a Wire conversation. The endpoint authenticates with the conversation secret already configured for GitHub webhooks. Store it as a GitHub Actions secret and do not print it in workflow logs. Empty or whitespace-only messages are rejected with `400`; a missing/invalid secret is rejected with `403`.
-
-```yaml
-- name: Notify Wire on failure
-  if: failure() || cancelled()
-  uses: wireapp/github-app/.github/actions/notify-wire@v1
-  with:
-    endpoint: https://github-app.example.com
-    conversation-id: ${{ vars.WIRE_CONVERSATION_ID }}
-    conversation-domain: ${{ vars.WIRE_CONVERSATION_DOMAIN }}
-    secret: ${{ secrets.WIRE_CONVERSATION_SECRET }}
-    text: |
-      CI failed for ${{ github.repository }} on `${{ github.ref_name }}`.
-      Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-```
-
-The action fails the workflow if the notification request fails; callers can opt into `continue-on-error: true` when notification delivery should not affect the job result. Pin the action to a released tag or commit SHA.
-
-### GitHub Actions notifications
-
-The existing webhook endpoint supports centralized notifications for these GitHub Actions events:
+The existing webhook endpoint provides centralized notifications rendered by this service. It supports
+these GitHub Actions-related repository webhook events:
 
 | GitHub event | Supported action | Notification |
 |--------------|------------------|--------------|
@@ -61,6 +42,73 @@ The existing webhook endpoint supports centralized notifications for these GitHu
 All completed conclusions are reported, including successful, failed, cancelled, skipped, and timed-out
 results when GitHub provides them. Other actions, such as `requested`, `queued`, and `in_progress`, are
 accepted by the endpoint but do not produce a Wire message.
+
+Use `/github webhook help` in the Wire conversation for its URL, secret, and setup instructions.
+
+### Workflow-authored GitHub Actions notifications
+
+Use the reusable composite action to send workflow-composed text to a Wire conversation. The endpoint authenticates with the conversation secret already configured for GitHub webhooks. Store it as a GitHub Actions secret and do not print it in workflow logs. Empty or whitespace-only messages are rejected with `400`; a missing/invalid secret is rejected with `403`.
+
+Use `/github actions help` in the Wire conversation to obtain the complete endpoint URL and shared
+conversation secret. Store them as `WIRE_WEBHOOK_URL` and `WIRE_WEBHOOK_SECRET` respectively.
+
+The action accepts these inputs:
+
+| Input | Required | Description |
+|-------|----------|-------------|
+| `webhook-url` | Yes | Complete `/actions/{conversation_id}/{conversation_domain}` URL. |
+| `secret` | Yes | Shared conversation secret used as the bearer token. |
+| `text` | Yes | Complete message text to send without service-side formatting. |
+
+```yaml
+- name: Notify Wire on failure
+  if: failure() || cancelled()
+  uses: wireapp/github-app/.github/actions/notify-wire@v1
+  with:
+    webhook-url: ${{ secrets.WIRE_WEBHOOK_URL }}
+    secret: ${{ secrets.WIRE_WEBHOOK_SECRET }}
+    text: |
+      CI failed for ${{ github.repository }} on `${{ github.ref_name }}`.
+      Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+```
+
+The action fails the workflow if the notification request fails; callers can opt into `continue-on-error: true` when notification delivery should not affect the job result. Pin the action to a released tag or commit SHA.
+
+The workflow owns the notification condition and complete message text. For example, use `if: always()`
+for an unconditional notification or `if: failure() || cancelled()` for failure-only notification.
+
+The endpoint returns:
+
+- `200 OK` after Wire accepts the message;
+- `400 Bad Request` for an invalid conversation ID, malformed JSON, or blank text;
+- `401 Unauthorized` for missing or malformed bearer authorization;
+- `403 Forbidden` for an invalid token or a conversation without a stored token;
+- `415 Unsupported Media Type` when the request is not JSON.
+
+### Wire commands
+
+| Command | Description |
+|---------|-------------|
+| `/github help` | List available commands and notification approaches. |
+| `/github token` | Show or create the shared conversation token. |
+| `/github webhook help` | Show repository webhook setup instructions. |
+| `/github actions help` | Show the Actions endpoint, token usage, and reusable action example. |
+
+### Conversation secret storage
+
+The service stores one generated secret per qualified Wire conversation in Redis. The repository webhook
+endpoint uses it for GitHub HMAC validation, while the Actions endpoint uses the same value as a bearer
+token. `/github token`, `/github webhook help`, and `/github actions help` return the existing value or
+create and store one when the conversation does not have one yet.
+
+Treat this secret as a credential: anyone with the Actions endpoint and secret can post messages to the
+conversation. Keep it in GitHub Actions secrets and avoid exposing it in workflow output.
+
+### Reusable action releases
+
+Publish immutable semantic-version tags such as `v1.0.0` for the reusable action. A moving `v1` tag may
+also point to the latest compatible v1 release. Consumers that require reproducible workflows should pin
+the action to an immutable version tag or commit SHA.
 
 ## Building & Running
 

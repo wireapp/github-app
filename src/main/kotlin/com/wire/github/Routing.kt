@@ -1,18 +1,23 @@
 package com.wire.github
 
 import com.wire.github.metrics.UsageMetrics
+import com.wire.github.request.model.ActionsNotificationRequest
 import com.wire.github.response.model.GitHubResponse
+import com.wire.github.util.ActionsTokenValidator
 import com.wire.github.util.KtxSerializer
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
 import com.wire.sdk.model.QualifiedId
 import com.wire.sdk.model.WireMessage
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
+import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
@@ -20,12 +25,12 @@ import io.ktor.server.response.respondText
 import io.ktor.server.routing.application
 import io.ktor.server.routing.get
 import io.ktor.server.routing.post
+import io.ktor.server.routing.Route
 import io.ktor.server.routing.routing
 import java.io.IOException
 import java.util.UUID
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.Serializable
 import org.koin.core.context.GlobalContext
 
 @Suppress("LongMethod")
@@ -36,6 +41,7 @@ fun Application.configureRouting() {
     }
 
     val wireAppSdk = GlobalContext.get().get<WireAppSdk>()
+    val actionsTokenValidator = GlobalContext.get().get<ActionsTokenValidator>()
     val signatureValidator = GlobalContext.get().get<SignatureValidator>()
     val templateHandler = GlobalContext.get().get<TemplateHandler>()
     val usageMetrics = GlobalContext.get().get<UsageMetrics>()
@@ -145,51 +151,85 @@ fun Application.configureRouting() {
             return@post call.response.status(HttpStatusCode.OK)
         }
 
-        post("/actions/{$PARAM_CONVERSATION_ID}/{$PARAM_CONVERSATION_DOMAIN}") {
-            val conversationId = call.parameters[PARAM_CONVERSATION_ID]
-                ?: return@post call.respond(HttpStatusCode.BadRequest)
-            val conversationDomain = call.parameters[PARAM_CONVERSATION_DOMAIN]
-                ?: return@post call.respond(HttpStatusCode.BadRequest)
-            val bearerToken = call.request.headers["Authorization"]
-                ?.takeIf { it.startsWith("Bearer ") }
-                ?.removePrefix("Bearer ")
-                ?.takeIf { it.isNotBlank() }
-                ?: return@post call.respond(HttpStatusCode.Forbidden)
-
-            val isAuthorized = try {
-                signatureValidator.isBearerTokenValid(conversationId, conversationDomain, bearerToken)
-            } catch (exception: IOException) {
-                application.log.warn("No secret stored for conversation $conversationId@$conversationDomain")
-                false
-            }
-            if (!isAuthorized) return@post call.respond(HttpStatusCode.Forbidden)
-
-            val request = try {
-                KtxSerializer.json.decodeFromString<ActionsMessageRequest>(call.receiveText())
-            } catch (exception: SerializationException) {
-                return@post call.respond(HttpStatusCode.BadRequest)
-            }
-            if (request.text.isBlank()) return@post call.respond(HttpStatusCode.BadRequest)
-
-            val conversationUuid = try {
-                UUID.fromString(conversationId)
-            } catch (exception: IllegalArgumentException) {
-                return@post call.respond(HttpStatusCode.BadRequest)
-            }
-
-            wireAppSdk.getApplicationManager().sendMessage(
-                message = WireMessage.Text.create(
-                    conversationId = QualifiedId(id = conversationUuid, domain = conversationDomain),
-                    text = request.text
-                )
-            )
-            call.respond(HttpStatusCode.OK)
-        }
+        configureActionsRoute(
+            wireAppSdk = wireAppSdk,
+            actionsTokenValidator = actionsTokenValidator
+        )
     }
 }
 
 private const val PARAM_CONVERSATION_ID = "conversationId"
 private const val PARAM_CONVERSATION_DOMAIN = "conversationDomain"
 
-@Serializable
-private data class ActionsMessageRequest(val text: String)
+private fun Route.configureActionsRoute(
+    wireAppSdk: WireAppSdk,
+    actionsTokenValidator: ActionsTokenValidator
+) {
+    post("/actions/{$PARAM_CONVERSATION_ID}/{$PARAM_CONVERSATION_DOMAIN}") {
+        val conversationId = call.parameters[PARAM_CONVERSATION_ID]
+            ?: return@post call.response.status(HttpStatusCode.BadRequest)
+        val conversationDomain = call.parameters[PARAM_CONVERSATION_DOMAIN]
+            ?: return@post call.response.status(HttpStatusCode.BadRequest)
+        val conversationUuid = runCatching { UUID.fromString(conversationId) }.getOrNull()
+            ?: return@post call.response.status(HttpStatusCode.BadRequest)
+
+        if (!call.hasJsonContentType()) {
+            return@post call.response.status(HttpStatusCode.UnsupportedMediaType)
+        }
+
+        val bearerToken = call.request.headers[HttpHeaders.Authorization].toBearerToken()
+            ?: return@post call.response.status(HttpStatusCode.Unauthorized)
+
+        if (!actionsTokenValidator.isValid(conversationId, conversationDomain, bearerToken)) {
+            application.log.warn(
+                "Invalid Actions token for conversation $conversationId@$conversationDomain"
+            )
+            return@post call.response.status(HttpStatusCode.Forbidden)
+        }
+
+        val request = try {
+            KtxSerializer.json.decodeFromString<ActionsNotificationRequest>(call.receiveText())
+        } catch (exception: SerializationException) {
+            application.log.debug(
+                "Invalid Actions payload for conversation $conversationId@$conversationDomain",
+                exception
+            )
+            return@post call.response.status(HttpStatusCode.BadRequest)
+        }
+
+        if (request.text.isBlank()) return@post call.response.status(HttpStatusCode.BadRequest)
+
+        wireAppSdk.getApplicationManager().sendMessage(
+            message = WireMessage.Text.create(
+                conversationId = QualifiedId(
+                    id = conversationUuid,
+                    domain = conversationDomain
+                ),
+                text = request.text
+            )
+        )
+        call.response.status(HttpStatusCode.OK)
+    }
+}
+
+private fun ApplicationCall.hasJsonContentType(): Boolean =
+    request.headers[HttpHeaders.ContentType]
+        ?.substringBefore(';')
+        ?.trim()
+        ?.equals(ContentType.Application.Json.toString(), ignoreCase = true) == true
+
+private fun String?.toBearerToken(): String? {
+    val value = this?.trim()
+    val separator = value?.indexOf(' ') ?: -1
+    return if (value != null && separator > 0) {
+        val scheme = value.substring(startIndex = 0, endIndex = separator)
+        val token = value.substring(startIndex = separator + 1).trim()
+        token.takeIf {
+            scheme.equals("Bearer", ignoreCase = true) &&
+                it.isNotEmpty() &&
+                it.none(Char::isWhitespace)
+        }
+    } else {
+        null
+    }
+}
