@@ -1,7 +1,9 @@
 package com.wire.github
 
 import com.wire.github.util.ENV_VAR_HOST
+import com.wire.github.util.ActionsTokenGenerator
 import com.wire.github.util.SessionIdentifierGenerator
+import com.wire.github.util.toActionsTokenStorageKey
 import com.wire.github.util.toStorageKey
 import com.wire.sdk.model.QualifiedId
 import io.lettuce.core.api.sync.RedisCommands
@@ -9,7 +11,8 @@ import io.lettuce.core.api.sync.RedisCommands
 internal class GitHubCommandHandler(
     private val storage: RedisCommands<String, String>,
     private val host: String = ENV_VAR_HOST,
-    private val generateSecret: () -> String = SessionIdentifierGenerator::generate
+    private val generateSecret: () -> String = SessionIdentifierGenerator::generate,
+    private val generateActionsToken: () -> String = ActionsTokenGenerator::generate
 ) {
     fun response(
         command: String,
@@ -17,7 +20,7 @@ internal class GitHubCommandHandler(
     ): String? =
         when {
             command.equals(HELP_COMMAND, ignoreCase = true) -> help()
-            command.equals(TOKEN_COMMAND, ignoreCase = true) -> token(conversationId)
+            command.equals(TOKENS_COMMAND, ignoreCase = true) -> tokens(conversationId)
             command.equals(WEBHOOK_HELP_COMMAND, ignoreCase = true) -> webhookHelp(conversationId)
             command.equals(ACTIONS_HELP_COMMAND, ignoreCase = true) -> actionsHelp(conversationId)
             else -> null
@@ -26,13 +29,15 @@ internal class GitHubCommandHandler(
     fun help(): String =
         "GitHub App supports repository webhooks and workflow-authored Actions notifications.\n\n" +
             "Available commands:\n" +
-            "- `$TOKEN_COMMAND` — show or create this conversation's token\n" +
+            "- `$TOKENS_COMMAND` — show or create this conversation's credentials\n" +
             "- `$WEBHOOK_HELP_COMMAND` — configure GitHub repository webhooks\n" +
             "- `$ACTIONS_HELP_COMMAND` — send custom messages from GitHub Actions"
 
-    private fun token(conversationId: QualifiedId): String =
-        "Conversation token:\n\n`${getOrCreateSecret(conversationId)}`\n\n" +
-            "Store this value as a secret. Do not print it in workflow logs."
+    private fun tokens(conversationId: QualifiedId): String =
+        "Conversation credentials:\n\n" +
+            "GitHub webhook secret:\n`${getOrCreateSecret(conversationId)}`\n\n" +
+            "GitHub Actions token:\n`${getOrCreateActionsToken(conversationId)}`\n\n" +
+            "Store these values as secrets. Do not print them in workflow logs."
 
     fun webhookHelp(conversationId: QualifiedId): String {
         val webhookUrl = "$normalizedHost/${conversationId.id}/${conversationId.domain}"
@@ -50,13 +55,14 @@ internal class GitHubCommandHandler(
         val actionsUrl = "$normalizedHost/actions/${conversationId.id}/${conversationId.domain}"
         return "GitHub Actions notification setup:\n\n" +
             "Store this URL as `WIRE_WEBHOOK_URL`:\n$actionsUrl\n\n" +
-            "Store this token as `WIRE_WEBHOOK_SECRET`:\n${getOrCreateSecret(conversationId)}\n\n" +
+            "Store this token as `WIRE_ACTIONS_TOKEN`:\n" +
+            "${getOrCreateActionsToken(conversationId)}\n\n" +
             "Use the reusable action:\n\n" +
             "```yaml\n" +
             "uses: wireapp/github-app/.github/actions/notify-wire@v1\n" +
             "with:\n" +
             "  webhook-url: \${{ secrets.WIRE_WEBHOOK_URL }}\n" +
-            "  secret: \${{ secrets.WIRE_WEBHOOK_SECRET }}\n" +
+            "  token: \${{ secrets.WIRE_ACTIONS_TOKEN }}\n" +
             "  text: Message to send to Wire\n" +
             "```"
     }
@@ -66,12 +72,18 @@ internal class GitHubCommandHandler(
         return storage.get(storageKey) ?: generateSecret().also { storage.set(storageKey, it) }
     }
 
+    private fun getOrCreateActionsToken(conversationId: QualifiedId): String {
+        val storageKey = conversationId.toActionsTokenStorageKey()
+        return storage.get(storageKey)
+            ?: generateActionsToken().also { storage.set(storageKey, it) }
+    }
+
     private val normalizedHost: String
         get() = host.trimEnd('/')
 
     companion object {
         const val HELP_COMMAND = "/github help"
-        const val TOKEN_COMMAND = "/github token"
+        const val TOKENS_COMMAND = "/github tokens"
         const val WEBHOOK_HELP_COMMAND = "/github webhook help"
         const val ACTIONS_HELP_COMMAND = "/github actions help"
     }

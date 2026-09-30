@@ -26,7 +26,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
                 "conversationId: ${wireMessage.conversationId}, " +
                 "senderId: ${wireMessage.sender}"
         )
-        if (!wireMessage.text.equals(GitHubCommandHandler.TOKEN_COMMAND, ignoreCase = true)) {
+        if (!wireMessage.text.equals(GitHubCommandHandler.TOKENS_COMMAND, ignoreCase = true)) {
             usageMetrics.onHelpCommand()
         }
 

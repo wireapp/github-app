@@ -14,10 +14,10 @@ class ActionsTokenValidator(
         conversationDomain: String,
         token: String
     ): Boolean {
-        val storageKey = conversationId.toStorageKey(domain = conversationDomain)
-        val secret = storage.get(storageKey) ?: return false
+        val storageKey = conversationId.toActionsTokenStorageKey(domain = conversationDomain)
+        val storedToken = storage.get(storageKey) ?: return false
         return MessageDigest.isEqual(
-            secret.toByteArray(StandardCharsets.UTF_8),
+            storedToken.toByteArray(StandardCharsets.UTF_8),
             token.toByteArray(StandardCharsets.UTF_8)
         )
     }

@@ -47,17 +47,20 @@ Use `/github webhook help` in the Wire conversation for its URL, secret, and set
 
 ### Workflow-authored GitHub Actions notifications
 
-Use the reusable composite action to send workflow-composed text to a Wire conversation. The endpoint authenticates with the conversation secret already configured for GitHub webhooks. Store it as a GitHub Actions secret and do not print it in workflow logs. Empty or whitespace-only messages are rejected with `400`; a missing/invalid secret is rejected with `403`.
+Use the reusable composite action to send workflow-composed text to a Wire conversation. The endpoint
+authenticates with a dedicated per-conversation Actions token. Store it as a GitHub Actions secret and do
+not print it in workflow logs. Empty or whitespace-only messages are rejected with `400`; a missing or
+invalid token is rejected with `403`.
 
-Use `/github actions help` in the Wire conversation to obtain the complete endpoint URL and shared
-conversation secret. Store them as `WIRE_WEBHOOK_URL` and `WIRE_WEBHOOK_SECRET` respectively.
+Use `/github actions help` in the Wire conversation to obtain the complete endpoint URL and Actions
+token. Store them as `WIRE_WEBHOOK_URL` and `WIRE_ACTIONS_TOKEN` respectively.
 
 The action accepts these inputs:
 
 | Input | Required | Description |
 |-------|----------|-------------|
 | `webhook-url` | Yes | Complete `/actions/{conversation_id}/{conversation_domain}` URL. |
-| `secret` | Yes | Shared conversation secret used as the bearer token. |
+| `token` | Yes | Dedicated Actions bearer token. |
 | `text` | Yes | Complete message text to send without service-side formatting. |
 
 ```yaml
@@ -66,7 +69,7 @@ The action accepts these inputs:
   uses: wireapp/github-app/.github/actions/notify-wire@v1
   with:
     webhook-url: ${{ secrets.WIRE_WEBHOOK_URL }}
-    secret: ${{ secrets.WIRE_WEBHOOK_SECRET }}
+    token: ${{ secrets.WIRE_ACTIONS_TOKEN }}
     text: |
       CI failed for ${{ github.repository }} on `${{ github.ref_name }}`.
       Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -90,19 +93,19 @@ The endpoint returns:
 | Command | Description |
 |---------|-------------|
 | `/github help` | List available commands and notification approaches. |
-| `/github token` | Show or create the shared conversation token. |
+| `/github tokens` | Show or create the webhook secret and Actions token. |
 | `/github webhook help` | Show repository webhook setup instructions. |
 | `/github actions help` | Show the Actions endpoint, token usage, and reusable action example. |
 
-### Conversation secret storage
+### Conversation credential storage
 
-The service stores one generated secret per qualified Wire conversation in Redis. The repository webhook
-endpoint uses it for GitHub HMAC validation, while the Actions endpoint uses the same value as a bearer
-token. `/github token`, `/github webhook help`, and `/github actions help` return the existing value or
-create and store one when the conversation does not have one yet.
+The service stores separate credentials per qualified Wire conversation in Redis. The repository webhook
+endpoint uses its existing secret for GitHub HMAC validation. The Actions endpoint uses a dedicated,
+randomly generated bearer token. `/github tokens` shows or creates both credentials; each focused help
+command only shows or creates the credential it needs.
 
-Treat this secret as a credential: anyone with the Actions endpoint and secret can post messages to the
-conversation. Keep it in GitHub Actions secrets and avoid exposing it in workflow output.
+Treat both values as credentials. Anyone with the Actions endpoint and Actions token can post messages to
+the conversation. Keep credentials in GitHub secrets and avoid exposing them in workflow output.
 
 ### Reusable action releases
 

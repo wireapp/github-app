@@ -4,8 +4,8 @@ inputs:
   webhook-url:
     description: Full github-app Actions endpoint URL for the Wire conversation
     required: true
-  secret:
-    description: Conversation secret configured for github-app
+  token:
+    description: GitHub Actions token configured for the Wire conversation
     required: true
   text:
     description: Message text to send
@@ -17,13 +17,13 @@ runs:
       shell: bash
       env:
         WIRE_WEBHOOK_URL: ${{ inputs.webhook-url }}
-        CONVERSATION_SECRET: ${{ inputs.secret }}
+        WIRE_ACTIONS_TOKEN: ${{ inputs.token }}
         MESSAGE_TEXT: ${{ inputs.text }}
       run: |
         set -euo pipefail
         python3 -c 'import json, os; print(json.dumps({"text": os.environ["MESSAGE_TEXT"]}))' \
           | curl --fail-with-body --silent --show-error \
             -X POST "$WIRE_WEBHOOK_URL" \
-            -H "Authorization: Bearer ${CONVERSATION_SECRET}" \
+            -H "Authorization: Bearer ${WIRE_ACTIONS_TOKEN}" \
             -H "Content-Type: application/json" \
             --data-binary @-

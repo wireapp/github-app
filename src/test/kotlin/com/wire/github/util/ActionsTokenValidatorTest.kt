@@ -20,28 +20,36 @@ class ActionsTokenValidatorTest {
 
     @Test
     fun `matching stored token is valid`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey(CONVERSATION_DOMAIN)) } returns SECRET
+        every {
+            storage.get(ACTIONS_STORAGE_KEY)
+        } returns TOKEN
 
-        assertTrue(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, SECRET))
+        assertTrue(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, TOKEN))
     }
 
     @Test
     fun `wrong token is invalid`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey(CONVERSATION_DOMAIN)) } returns SECRET
+        every {
+            storage.get(ACTIONS_STORAGE_KEY)
+        } returns TOKEN
 
         assertFalse(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, "wrong-secret"))
     }
 
     @Test
     fun `missing stored token is invalid`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey(CONVERSATION_DOMAIN)) } returns null
+        every {
+            storage.get(ACTIONS_STORAGE_KEY)
+        } returns null
 
-        assertFalse(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, SECRET))
+        assertFalse(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, TOKEN))
     }
 
     private companion object {
         val CONVERSATION_ID = UUID.randomUUID().toString()
         const val CONVERSATION_DOMAIN = "conversation.example.com"
-        const val SECRET = "conversation-secret"
+        val ACTIONS_STORAGE_KEY =
+            "github-app:$CONVERSATION_ID@$CONVERSATION_DOMAIN:actions-token"
+        const val TOKEN = "actions-token"
     }
 }
