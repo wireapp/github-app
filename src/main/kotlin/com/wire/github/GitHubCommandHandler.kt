@@ -67,16 +67,16 @@ internal class GitHubCommandHandler(
             "```"
     }
 
-    private fun getOrCreateSecret(conversationId: QualifiedId): String {
-        val storageKey = conversationId.toStorageKey()
-        return storage.get(storageKey) ?: generateSecret().also { storage.set(storageKey, it) }
-    }
+    private fun getOrCreateSecret(conversationId: QualifiedId): String =
+        getOrCreate(conversationId.toStorageKey(), generateSecret)
 
-    private fun getOrCreateActionsToken(conversationId: QualifiedId): String {
-        val storageKey = conversationId.toActionsTokenStorageKey()
-        return storage.get(storageKey)
-            ?: generateActionsToken().also { storage.set(storageKey, it) }
-    }
+    private fun getOrCreateActionsToken(conversationId: QualifiedId): String =
+        getOrCreate(conversationId.toActionsTokenStorageKey(), generateActionsToken)
+
+    private fun getOrCreate(
+        storageKey: String,
+        generate: () -> String
+    ): String = storage.get(storageKey) ?: generate().also { storage.set(storageKey, it) }
 
     private val normalizedHost: String
         get() = host.trimEnd('/')

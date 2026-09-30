@@ -52,7 +52,7 @@ class ApplicationTest {
             modules(
                 module {
                     single { SignatureValidator() }
-                    single { ActionsTokenValidator(redisConnection = mockRedisConnection) }
+                    single { ActionsTokenValidator(storage = mockRedisCommands) }
                     single { TemplateHandler() }
                     single { mockRedisClient }
                     single<StatefulRedisConnection<String, String>> { mockRedisConnection }
@@ -393,7 +393,7 @@ class ApplicationTest {
     }
 
     @Test
-    fun `given valid bearer secret, when Actions message is posted, then message is sent`() {
+    fun `given valid bearer token, when Actions message is posted, then message is sent`() {
         val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
         val sentMessage = slot<WireMessage.Text>()
         every {
@@ -403,8 +403,8 @@ class ApplicationTest {
         testApplication {
             application { configureRouting() }
             val response = client.post("/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
-                contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer conversation-secret")
+                contentType(ContentType.parse("application/json; charset=UTF-8"))
+                header("Authorization", "bearer $ACTIONS_TOKEN")
                 setBody("""{"text":"CI failed"}""")
             }
 
@@ -413,11 +413,7 @@ class ApplicationTest {
             assertEquals(CONVERSATION_ID, sentMessage.captured.conversationId)
             assertEquals("CI failed", sentMessage.captured.text)
             verify(exactly = 1) {
-                actionsTokenValidator.isValid(
-                    CONVERSATION_ID.id.toString(),
-                    CONVERSATION_ID.domain,
-                    "conversation-secret"
-                )
+                actionsTokenValidator.isValid(CONVERSATION_ID, ACTIONS_TOKEN)
             }
             verify(exactly = 1) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
         }
@@ -427,7 +423,7 @@ class ApplicationTest {
     fun `Actions message without bearer authorization is unauthorized`() {
         listOf(
             null,
-            "Basic conversation-secret",
+            "Basic $ACTIONS_TOKEN",
             "Bearer ",
             "Bearer token with-spaces"
         ).forEach { authorization ->
@@ -445,7 +441,7 @@ class ApplicationTest {
 
                 assertEquals(HttpStatusCode.Unauthorized, response.status)
                 assertEquals("Bearer authorization is required", response.bodyAsText())
-                verify(exactly = 0) { actionsTokenValidator.isValid(any(), any(), any()) }
+                verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
                 verify(exactly = 0) {
                     wireAppSdk.getApplicationManager().sendMessage(message = any())
                 }
@@ -511,13 +507,13 @@ class ApplicationTest {
                 "/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}"
             ) {
                 contentType(ContentType.Text.Plain)
-                header("Authorization", "Bearer conversation-secret")
+                header("Authorization", "Bearer $ACTIONS_TOKEN")
                 setBody("""{"text":"CI failed"}""")
             }
 
             assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
             assertEquals("Content-Type must be application/json", response.bodyAsText())
-            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any(), any()) }
+            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
             verify(exactly = 0) {
                 wireAppSdk.getApplicationManager().sendMessage(message = any())
             }
@@ -532,13 +528,13 @@ class ApplicationTest {
             application { configureRouting() }
             val response = client.post("/actions/not-a-uuid/${CONVERSATION_ID.domain}") {
                 contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer conversation-secret")
+                header("Authorization", "Bearer $ACTIONS_TOKEN")
                 setBody("""{"text":"CI failed"}""")
             }
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             assertEquals("Invalid conversation ID", response.bodyAsText())
-            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any(), any()) }
+            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
             verify(exactly = 0) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
         }
     }
@@ -547,7 +543,7 @@ class ApplicationTest {
         tokenValid: Boolean
     ): Pair<ActionsTokenValidator, WireAppSdk> {
         val actionsTokenValidator = mockk<ActionsTokenValidator>()
-        every { actionsTokenValidator.isValid(any(), any(), any()) } returns tokenValid
+        every { actionsTokenValidator.isValid(any(), any()) } returns tokenValid
         val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
         loadKoinModules(
             module {
@@ -562,7 +558,7 @@ class ApplicationTest {
         payload: String = """{"text":"CI failed"}"""
     ) = post("/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
         contentType(ContentType.Application.Json)
-        header("Authorization", "Bearer conversation-secret")
+        header("Authorization", "Bearer $ACTIONS_TOKEN")
         setBody(payload)
     }
 
@@ -574,6 +570,7 @@ class ApplicationTest {
         const val DUMMY_EVENT = "pull_request"
         const val DUMMY_SIGNATURE = "dummySignature"
         const val DUMMY_TEMPLATE = "dummyTemplate"
+        const val ACTIONS_TOKEN = "actions-token"
         val DUMMY_PAYLOAD = """
             {
                 "action": "created",

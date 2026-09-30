@@ -1,6 +1,6 @@
 package com.wire.github.util
 
-import io.lettuce.core.api.StatefulRedisConnection
+import com.wire.sdk.model.QualifiedId
 import io.lettuce.core.api.sync.RedisCommands
 import io.mockk.every
 import io.mockk.mockk
@@ -11,12 +11,7 @@ import kotlin.test.assertTrue
 
 class ActionsTokenValidatorTest {
     private val storage = mockk<RedisCommands<String, String>>()
-    private val redisConnection = mockk<StatefulRedisConnection<String, String>>()
-    private val validator by lazy { ActionsTokenValidator(redisConnection) }
-
-    init {
-        every { redisConnection.sync() } returns storage
-    }
+    private val validator = ActionsTokenValidator(storage)
 
     @Test
     fun `matching stored token is valid`() {
@@ -24,7 +19,7 @@ class ActionsTokenValidatorTest {
             storage.get(ACTIONS_STORAGE_KEY)
         } returns TOKEN
 
-        assertTrue(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, TOKEN))
+        assertTrue(validator.isValid(CONVERSATION_ID, TOKEN))
     }
 
     @Test
@@ -33,7 +28,7 @@ class ActionsTokenValidatorTest {
             storage.get(ACTIONS_STORAGE_KEY)
         } returns TOKEN
 
-        assertFalse(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, "wrong-secret"))
+        assertFalse(validator.isValid(CONVERSATION_ID, "wrong-token"))
     }
 
     @Test
@@ -42,14 +37,16 @@ class ActionsTokenValidatorTest {
             storage.get(ACTIONS_STORAGE_KEY)
         } returns null
 
-        assertFalse(validator.isValid(CONVERSATION_ID, CONVERSATION_DOMAIN, TOKEN))
+        assertFalse(validator.isValid(CONVERSATION_ID, TOKEN))
     }
 
     private companion object {
-        val CONVERSATION_ID = UUID.randomUUID().toString()
-        const val CONVERSATION_DOMAIN = "conversation.example.com"
+        val CONVERSATION_ID = QualifiedId(
+            UUID.randomUUID(),
+            "conversation.example.com"
+        )
         val ACTIONS_STORAGE_KEY =
-            "github-app:$CONVERSATION_ID@$CONVERSATION_DOMAIN:actions-token"
+            "github-app:${CONVERSATION_ID.id}@${CONVERSATION_ID.domain}:actions-token"
         const val TOKEN = "actions-token"
     }
 }

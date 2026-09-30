@@ -11,14 +11,17 @@ import com.wire.sdk.WireAppSdk
 import com.wire.sdk.model.QualifiedId
 import com.wire.sdk.model.WireMessage
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.auth.HttpAuthHeader
+import io.ktor.http.auth.parseAuthorizationHeader
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
 import io.ktor.server.application.log
 import io.ktor.server.application.ApplicationCall
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.server.request.authorization
+import io.ktor.server.request.contentType
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respond
 import io.ktor.server.response.respondText
@@ -181,21 +184,22 @@ private fun Route.configureActionsRoute(
                 HttpStatusCode.BadRequest,
                 "Invalid conversation ID"
             )
+        val qualifiedConversationId = QualifiedId(conversationUuid, conversationDomain)
 
-        if (!call.hasJsonContentType()) {
+        if (!call.request.contentType().match(ContentType.Application.Json)) {
             return@post call.respondActionsError(
                 HttpStatusCode.UnsupportedMediaType,
                 "Content-Type must be application/json"
             )
         }
 
-        val bearerToken = call.request.headers[HttpHeaders.Authorization].toBearerToken()
+        val bearerToken = call.bearerToken()
             ?: return@post call.respondActionsError(
                 HttpStatusCode.Unauthorized,
                 "Bearer authorization is required"
             )
 
-        if (!actionsTokenValidator.isValid(conversationId, conversationDomain, bearerToken)) {
+        if (!actionsTokenValidator.isValid(qualifiedConversationId, bearerToken)) {
             application.log.warn(
                 "Invalid Actions token for conversation $conversationId@$conversationDomain"
             )
@@ -205,15 +209,12 @@ private fun Route.configureActionsRoute(
             )
         }
 
-        val request = call.receiveActionsRequest(conversationId, conversationDomain)
+        val request = call.receiveActionsRequest(qualifiedConversationId)
             ?: return@post
 
         wireAppSdk.getApplicationManager().sendMessage(
             message = WireMessage.Text.create(
-                conversationId = QualifiedId(
-                    id = conversationUuid,
-                    domain = conversationDomain
-                ),
+                conversationId = qualifiedConversationId,
                 text = request.text
             )
         )
@@ -222,14 +223,14 @@ private fun Route.configureActionsRoute(
 }
 
 private suspend fun ApplicationCall.receiveActionsRequest(
-    conversationId: String,
-    conversationDomain: String
+    conversationId: QualifiedId
 ): ActionsNotificationRequest? {
     val request = try {
         KtxSerializer.json.decodeFromString<ActionsNotificationRequest>(receiveText())
     } catch (exception: SerializationException) {
         application.log.debug(
-            "Invalid Actions payload for conversation $conversationId@$conversationDomain",
+            "Invalid Actions payload for conversation {}",
+            conversationId,
             exception
         )
         respondActionsError(HttpStatusCode.BadRequest, "Invalid JSON payload")
@@ -251,24 +252,15 @@ private suspend fun ApplicationCall.respondActionsError(
     respondText(text = message, status = status)
 }
 
-private fun ApplicationCall.hasJsonContentType(): Boolean =
-    request.headers[HttpHeaders.ContentType]
-        ?.substringBefore(';')
-        ?.trim()
-        ?.equals(ContentType.Application.Json.toString(), ignoreCase = true) == true
+private fun ApplicationCall.bearerToken(): String? {
+    val authorization = request.authorization()?.trim()
+    val header = authorization
+        ?.let { runCatching { parseAuthorizationHeader(it) }.getOrNull() }
+        as? HttpAuthHeader.Single
 
-private fun String?.toBearerToken(): String? {
-    val value = this?.trim()
-    val separator = value?.indexOf(' ') ?: -1
-    return if (value != null && separator > 0) {
-        val scheme = value.substring(startIndex = 0, endIndex = separator)
-        val token = value.substring(startIndex = separator + 1).trim()
-        token.takeIf {
-            scheme.equals("Bearer", ignoreCase = true) &&
-                it.isNotEmpty() &&
-                it.none(Char::isWhitespace)
-        }
-    } else {
-        null
+    return header?.blob?.takeIf {
+        header.authScheme.equals("Bearer", ignoreCase = true) &&
+            it.isNotEmpty() &&
+            it.none(Char::isWhitespace)
     }
 }

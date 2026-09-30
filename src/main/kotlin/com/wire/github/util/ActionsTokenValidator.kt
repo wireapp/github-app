@@ -1,20 +1,18 @@
 package com.wire.github.util
 
-import io.lettuce.core.api.StatefulRedisConnection
+import com.wire.sdk.model.QualifiedId
+import io.lettuce.core.api.sync.RedisCommands
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
 class ActionsTokenValidator(
-    redisConnection: StatefulRedisConnection<String, String>
+    private val storage: RedisCommands<String, String>
 ) {
-    private val storage = redisConnection.sync()
-
     fun isValid(
-        conversationId: String,
-        conversationDomain: String,
+        conversationId: QualifiedId,
         token: String
     ): Boolean {
-        val storageKey = conversationId.toActionsTokenStorageKey(domain = conversationDomain)
+        val storageKey = conversationId.toActionsTokenStorageKey()
         val storedToken = storage.get(storageKey) ?: return false
         return MessageDigest.isEqual(
             storedToken.toByteArray(StandardCharsets.UTF_8),

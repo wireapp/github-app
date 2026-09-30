@@ -24,7 +24,11 @@ val projectModules = module {
         }
     }
     single { SignatureValidator() }
-    single { ActionsTokenValidator(redisConnection = get()) }
+    single {
+        ActionsTokenValidator(
+            storage = get<StatefulRedisConnection<String, String>>().sync()
+        )
+    }
     single { TemplateHandler() }
     single { RedisClient.create(ENV_VAR_REDIS_URL) }
     single<StatefulRedisConnection<String, String>> { get<RedisClient>().connect() }
