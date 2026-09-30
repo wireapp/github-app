@@ -68,7 +68,7 @@ internal class GitHubCommandHandler(
             "  text: Message to send to Wire\n" +
             "```"
     }
-    
+
     private fun trackedHelp(response: String): String =
         response.also { usageMetrics.onHelpCommand() }
 
