@@ -47,11 +47,6 @@ Use `/github webhook help` in the Wire conversation for its URL, secret, and set
 
 ### Workflow-authored GitHub Actions notifications
 
-Use the reusable composite action to send workflow-composed text to a Wire conversation. The endpoint
-authenticates with a dedicated per-conversation Actions token. Store it as a GitHub Actions secret and do
-not print it in workflow logs. Empty or whitespace-only messages are rejected with `400`; a missing or
-invalid token is rejected with `403`.
-
 Use `/github actions help` in the Wire conversation to obtain the complete endpoint URL and Actions
 token. Store them as `WIRE_WEBHOOK_URL` and `WIRE_ACTIONS_TOKEN` respectively.
 
@@ -75,20 +70,7 @@ The action accepts these inputs:
       Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 ```
 
-The action fails the workflow if the notification request fails; callers can opt into `continue-on-error: true` when notification delivery should not affect the job result. Pin the action to a released tag or commit SHA.
-
-The workflow owns the notification condition and complete message text. For example, use `if: always()`
-for an unconditional notification or `if: failure() || cancelled()` for failure-only notification.
-
-The endpoint returns:
-
-- `200 OK` after Wire accepts the message;
-- `400 Bad Request` for an invalid conversation ID, malformed JSON, or blank text;
-- `401 Unauthorized` for missing or malformed bearer authorization;
-- `403 Forbidden` for an invalid token or a conversation without a stored token;
-- `415 Unsupported Media Type` when the request is not JSON.
-
-### Wire commands
+## Wire commands
 
 | Command | Description |
 |---------|-------------|
@@ -97,21 +79,6 @@ The endpoint returns:
 | `/github webhook help` | Show repository webhook setup instructions. |
 | `/github actions help` | Show the Actions endpoint, token usage, and reusable action example. |
 
-### Conversation credential storage
-
-The service stores separate credentials per qualified Wire conversation in Redis. The repository webhook
-endpoint uses its existing secret for GitHub HMAC validation. The Actions endpoint uses a dedicated,
-randomly generated bearer token. `/github tokens` shows or creates both credentials; each focused help
-command only shows or creates the credential it needs.
-
-Treat both values as credentials. Anyone with the Actions endpoint and Actions token can post messages to
-the conversation. Keep credentials in GitHub secrets and avoid exposing them in workflow output.
-
-### Reusable action releases
-
-Publish immutable semantic-version tags such as `v1.0.0` for the reusable action. A moving `v1` tag may
-also point to the latest compatible v1 release. Consumers that require reproducible workflows should pin
-the action to an immutable version tag or commit SHA.
 
 ## Building & Running
 
