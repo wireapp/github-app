@@ -1,5 +1,6 @@
 package com.wire.github
 
+import com.wire.github.metrics.UsageMetrics
 import com.wire.github.util.ENV_VAR_HOST
 import com.wire.github.util.ActionsTokenGenerator
 import com.wire.github.util.SessionIdentifierGenerator
@@ -10,6 +11,7 @@ import io.lettuce.core.api.sync.RedisCommands
 
 internal class GitHubCommandHandler(
     private val storage: RedisCommands<String, String>,
+    private val usageMetrics: UsageMetrics,
     private val host: String = ENV_VAR_HOST,
     private val generateSecret: () -> String = SessionIdentifierGenerator::generate,
     private val generateActionsToken: () -> String = ActionsTokenGenerator::generate
@@ -18,11 +20,11 @@ internal class GitHubCommandHandler(
         command: String,
         conversationId: QualifiedId
     ): String? =
-        when {
-            command.equals(HELP_COMMAND, ignoreCase = true) -> help()
-            command.equals(TOKENS_COMMAND, ignoreCase = true) -> tokens(conversationId)
-            command.equals(WEBHOOK_HELP_COMMAND, ignoreCase = true) -> webhookHelp(conversationId)
-            command.equals(ACTIONS_HELP_COMMAND, ignoreCase = true) -> actionsHelp(conversationId)
+        when (command.lowercase()) {
+            HELP_COMMAND -> trackedHelp(help())
+            TOKENS_COMMAND -> tokens(conversationId)
+            WEBHOOK_HELP_COMMAND -> trackedHelp(webhookHelp(conversationId))
+            ACTIONS_HELP_COMMAND -> trackedHelp(actionsHelp(conversationId))
             else -> null
         }
 
@@ -66,6 +68,9 @@ internal class GitHubCommandHandler(
             "  text: Message to send to Wire\n" +
             "```"
     }
+    
+    private fun trackedHelp(response: String): String =
+        response.also { usageMetrics.onHelpCommand() }
 
     private fun getOrCreateSecret(conversationId: QualifiedId): String =
         getOrCreate(conversationId.toStorageKey(), generateSecret)

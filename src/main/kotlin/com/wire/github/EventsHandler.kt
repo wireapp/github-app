@@ -12,8 +12,11 @@ import org.slf4j.LoggerFactory
 class EventsHandler : WireEventsHandlerSuspending() {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
-    private val commandHandler = GitHubCommandHandler(storage = redisConnection.sync())
     private val usageMetrics = GlobalContext.get().get<UsageMetrics>()
+    private val commandHandler = GitHubCommandHandler(
+        storage = redisConnection.sync(),
+        usageMetrics = usageMetrics
+    )
 
     override suspend fun onTextMessageReceived(wireMessage: WireMessage.Text) {
         val response = commandHandler.response(
@@ -26,10 +29,6 @@ class EventsHandler : WireEventsHandlerSuspending() {
                 "conversationId: ${wireMessage.conversationId}, " +
                 "senderId: ${wireMessage.sender}"
         )
-        if (!wireMessage.text.equals(GitHubCommandHandler.TOKENS_COMMAND, ignoreCase = true)) {
-            usageMetrics.onHelpCommand()
-        }
-
         manager.sendMessage(
             message = WireMessage.Text.create(
                 conversationId = wireMessage.conversationId,
