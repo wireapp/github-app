@@ -129,7 +129,6 @@ GHAPP_SERVER_PORT=8083
 GHAPP_REDIS_URL=redis://username:password@host:port
 WIRE_SDK_API_HOST=https://nginz-https.chala.wire.link
 WIRE_SDK_API_TOKEN=myApiToken
-WIRE_SDK_APP_ID=f562e146-dec2-4d85-93c7-7132746b5cca
 WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD=myDummyPasswordmyDummyPassword01
 ```
 

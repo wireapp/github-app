@@ -17,8 +17,6 @@ ingress:
     - github-app.apps-prod.wire.com
     secretName: github-app-tls
 env:
-- name: WIRE_SDK_APP_ID
-  value: "61c2f1c4-ca8a-4d67-8f05-ca9bb37d85cc"
 - name: WIRE_SDK_API_HOST
   value: "https://prod-nginz-https.wire.com"
 - name: GHAPP_API_HOST

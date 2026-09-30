@@ -73,8 +73,6 @@ affinity: {}
 
 # Environment variables for the application
 env:
-  - name: WIRE_SDK_APP_ID
-    value: ""
   - name: WIRE_SDK_API_HOST
     value: ""
   - name: GHAPP_API_HOST

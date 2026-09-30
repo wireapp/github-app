@@ -5,7 +5,6 @@ import com.wire.github.metrics.UsageMetrics
 import com.wire.github.util.ActionsTokenValidator
 import com.wire.github.util.ENV_VAR_API_HOST
 import com.wire.github.util.ENV_VAR_API_TOKEN
-import com.wire.github.util.ENV_VAR_APPLICATION_ID
 import com.wire.github.util.ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY
 import com.wire.github.util.ENV_VAR_REDIS_URL
 import com.wire.github.util.SignatureValidator
@@ -35,7 +34,6 @@ val projectModules = module {
 
 private fun wireAppSdk(): WireAppSdk =
     WireAppSdk(
-        applicationId = ENV_VAR_APPLICATION_ID,
         apiToken = ENV_VAR_API_TOKEN,
         apiHost = ENV_VAR_API_HOST,
         cryptographyStorageKey = ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY.toByteArray(),
