@@ -53,7 +53,7 @@ class EventsHandler : WireEventsHandlerSuspending() {
         val message = buildString {
             appendLine(WELCOME_TEXT)
             appendLine()
-            append("Use `${GitHubCommandHandler.HELP_COMMAND}` to see all available commands.")
+            append(GitHubCommandHandler.HELP_COMMANDS)
         }
 
         manager.sendMessage(
