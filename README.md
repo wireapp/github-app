@@ -23,14 +23,16 @@ No license is granted to the Wire trademark and its associated logos, all of whi
 
 Here's a list of features included in this project:
 
-| Name                                     | Description                                |
-|------------------------------------------|--------------------------------------------|
-| /health                                  | Healthcheck endpoint returning HTTP OK 200. |
-| /{conversation_id}/{conversation_domain} | Webhook endpoint.                          |
+| Name                                                   | Description                                      |
+|--------------------------------------------------------|--------------------------------------------------|
+| `/health`                                              | Healthcheck endpoint returning HTTP OK 200.      |
+| `/{conversation_id}/{conversation_domain}`             | Receive signed GitHub repository webhooks.       |
+| `/actions/{conversation_id}/{conversation_domain}`     | Receive workflow-authored GitHub Actions text.   |
 
-### GitHub Actions notifications
+### Repository webhook notifications
 
-The existing webhook endpoint supports centralized notifications for these GitHub Actions events:
+The existing webhook endpoint provides centralized notifications rendered by this service. It supports
+these GitHub Actions-related repository webhook events:
 
 | GitHub event | Supported action | Notification |
 |--------------|------------------|--------------|
@@ -40,6 +42,43 @@ The existing webhook endpoint supports centralized notifications for these GitHu
 All completed conclusions are reported, including successful, failed, cancelled, skipped, and timed-out
 results when GitHub provides them. Other actions, such as `requested`, `queued`, and `in_progress`, are
 accepted by the endpoint but do not produce a Wire message.
+
+Use `/github webhook help` in the Wire conversation for its URL, secret, and setup instructions.
+
+### Workflow-authored GitHub Actions notifications
+
+Use `/github actions help` in the Wire conversation to obtain the complete endpoint URL and Actions
+token. Store them as `WIRE_WEBHOOK_URL` and `WIRE_ACTIONS_TOKEN` respectively.
+
+The action accepts these inputs:
+
+| Input | Required | Description |
+|-------|----------|-------------|
+| `webhook-url` | Yes | Complete `/actions/{conversation_id}/{conversation_domain}` URL. |
+| `token` | Yes | Dedicated Actions bearer token. |
+| `text` | Yes | Complete message text to send without service-side formatting. |
+
+```yaml
+- name: Notify Wire on failure
+  if: failure() || cancelled()
+  uses: wireapp/github-app/.github/actions/notify-wire@v1
+  with:
+    webhook-url: ${{ secrets.WIRE_WEBHOOK_URL }}
+    token: ${{ secrets.WIRE_ACTIONS_TOKEN }}
+    text: |
+      CI failed for ${{ github.repository }} on `${{ github.ref_name }}`.
+      Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+```
+
+## Wire commands
+
+| Command | Description |
+|---------|-------------|
+| `/github help` | List available commands and notification approaches. |
+| `/github tokens` | Show or create the webhook secret and Actions token. |
+| `/github webhook help` | Show repository webhook setup instructions. |
+| `/github actions help` | Show the Actions endpoint, token usage, and reusable action example. |
+
 
 ## Building & Running
 
@@ -57,7 +96,6 @@ GHAPP_SERVER_PORT=8083
 GHAPP_REDIS_URL=redis://username:password@host:port
 WIRE_SDK_API_HOST=https://nginz-https.chala.wire.link
 WIRE_SDK_API_TOKEN=myApiToken
-WIRE_SDK_APP_ID=f562e146-dec2-4d85-93c7-7132746b5cca
 WIRE_SDK_CRYPTOGRAPHY_STORAGE_PASSWORD=myDummyPasswordmyDummyPassword01
 ```
 

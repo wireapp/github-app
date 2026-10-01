@@ -1,10 +1,12 @@
 package com.wire.github
 
 import com.wire.github.metrics.UsageMetrics
+import com.wire.github.util.ActionsTokenValidator
 import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
 import com.wire.sdk.model.QualifiedId
+import com.wire.sdk.model.WireMessage
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -24,6 +26,7 @@ import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import java.util.UUID
 import kotlin.test.AfterTest
@@ -49,6 +52,7 @@ class ApplicationTest {
             modules(
                 module {
                     single { SignatureValidator() }
+                    single { ActionsTokenValidator(storage = mockRedisCommands) }
                     single { TemplateHandler() }
                     single { mockRedisClient }
                     single<StatefulRedisConnection<String, String>> { mockRedisConnection }
@@ -291,6 +295,64 @@ class ApplicationTest {
     }
 
     @Test
+    fun `given invalid signature, when webhook is posted, then forbidden without sending`() {
+        val signatureValidator = mockk<SignatureValidator>()
+        every { signatureValidator.isValid(any(), any(), any(), any()) } returns false
+        val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
+        loadKoinModules(
+            module {
+                single { signatureValidator }
+                single { wireAppSdk }
+            }
+        )
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.post("/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.Application.Json)
+                header("X-GitHub-Event", DUMMY_EVENT)
+                header("X-Hub-Signature", "sha1=wrong-signature")
+                header("X-GitHub-Delivery", "delivery")
+                setBody(DUMMY_PAYLOAD)
+            }
+
+            assertEquals(HttpStatusCode.Forbidden, response.status)
+            verify(exactly = 0) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
+            }
+        }
+    }
+
+    @Test
+    fun `given malformed payload, when webhook is posted, then bad request without sending`() {
+        val signatureValidator = mockk<SignatureValidator>()
+        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+        val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
+        loadKoinModules(
+            module {
+                single { signatureValidator }
+                single { wireAppSdk }
+            }
+        )
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.post("/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.Application.Json)
+                header("X-GitHub-Event", DUMMY_EVENT)
+                header("X-Hub-Signature", "sha1=$DUMMY_SIGNATURE")
+                header("X-GitHub-Delivery", "delivery")
+                setBody("{")
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            verify(exactly = 0) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
+            }
+        }
+    }
+
+    @Test
     fun `given completed GitHub Actions events, when received, then messages are sent`() {
         val signatureValidator = mockk<SignatureValidator>()
         every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
@@ -330,6 +392,176 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun `given valid bearer token, when Actions message is posted, then message is sent`() {
+        val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+        val sentMessage = slot<WireMessage.Text>()
+        every {
+            wireAppSdk.getApplicationManager().sendMessage(message = capture(sentMessage))
+        } returns UUID.randomUUID()
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.post("/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.parse("application/json; charset=UTF-8"))
+                header("Authorization", "bearer $ACTIONS_TOKEN")
+                setBody("""{"text":"CI failed"}""")
+            }
+
+            assertEquals(HttpStatusCode.OK, response.status)
+            assertEquals("", response.bodyAsText())
+            assertEquals(CONVERSATION_ID, sentMessage.captured.conversationId)
+            assertEquals("CI failed", sentMessage.captured.text)
+            verify(exactly = 1) {
+                actionsTokenValidator.isValid(CONVERSATION_ID, ACTIONS_TOKEN)
+            }
+            verify(exactly = 1) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
+        }
+    }
+
+    @Test
+    fun `Actions message without bearer authorization is unauthorized`() {
+        listOf(
+            null,
+            "Basic $ACTIONS_TOKEN",
+            "Bearer ",
+            "Bearer token with-spaces"
+        ).forEach { authorization ->
+            val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+
+            testApplication {
+                application { configureRouting() }
+                val response = client.post(
+                    "/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}"
+                ) {
+                    contentType(ContentType.Application.Json)
+                    authorization?.let { header("Authorization", it) }
+                    setBody("""{"text":"CI failed"}""")
+                }
+
+                assertEquals(HttpStatusCode.Unauthorized, response.status)
+                assertEquals("Bearer authorization is required", response.bodyAsText())
+                verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
+                verify(exactly = 0) {
+                    wireAppSdk.getApplicationManager().sendMessage(message = any())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `given wrong bearer token, when Actions message is posted, then forbidden`() {
+        val (_, wireAppSdk) = loadActionsDependencies(tokenValid = false)
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.postActionsMessage()
+
+            assertEquals(HttpStatusCode.Forbidden, response.status)
+            assertEquals("Invalid conversation credentials", response.bodyAsText())
+            verify(exactly = 0) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
+        }
+    }
+
+    @Test
+    fun `Actions message with invalid text payload is a bad request`() {
+        listOf("{", "{}", """{"body":"CI failed"}""").forEach { payload ->
+            val (_, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+
+            testApplication {
+                application { configureRouting() }
+                val response = client.postActionsMessage(payload = payload)
+
+                assertEquals(HttpStatusCode.BadRequest, response.status)
+                assertEquals("Invalid JSON payload", response.bodyAsText())
+                verify(exactly = 0) {
+                    wireAppSdk.getApplicationManager().sendMessage(message = any())
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `Actions message with blank text is a bad request`() {
+        val (_, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.postActionsMessage(payload = """{"text":"  "}""")
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertEquals("Text must not be blank", response.bodyAsText())
+            verify(exactly = 0) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
+            }
+        }
+    }
+
+    @Test
+    fun `Actions message with non-json content type is unsupported`() {
+        val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.post(
+                "/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}"
+            ) {
+                contentType(ContentType.Text.Plain)
+                header("Authorization", "Bearer $ACTIONS_TOKEN")
+                setBody("""{"text":"CI failed"}""")
+            }
+
+            assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
+            assertEquals("Content-Type must be application/json", response.bodyAsText())
+            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
+            verify(exactly = 0) {
+                wireAppSdk.getApplicationManager().sendMessage(message = any())
+            }
+        }
+    }
+
+    @Test
+    fun `given invalid conversation ID, when Actions message is posted, then bad request`() {
+        val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+
+        testApplication {
+            application { configureRouting() }
+            val response = client.post("/actions/not-a-uuid/${CONVERSATION_ID.domain}") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $ACTIONS_TOKEN")
+                setBody("""{"text":"CI failed"}""")
+            }
+
+            assertEquals(HttpStatusCode.BadRequest, response.status)
+            assertEquals("Invalid conversation ID", response.bodyAsText())
+            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
+            verify(exactly = 0) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
+        }
+    }
+
+    private fun loadActionsDependencies(
+        tokenValid: Boolean
+    ): Pair<ActionsTokenValidator, WireAppSdk> {
+        val actionsTokenValidator = mockk<ActionsTokenValidator>()
+        every { actionsTokenValidator.isValid(any(), any()) } returns tokenValid
+        val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
+        loadKoinModules(
+            module {
+                single { actionsTokenValidator }
+                single { wireAppSdk }
+            }
+        )
+        return actionsTokenValidator to wireAppSdk
+    }
+
+    private suspend fun io.ktor.client.HttpClient.postActionsMessage(
+        payload: String = """{"text":"CI failed"}"""
+    ) = post("/actions/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
+        contentType(ContentType.Application.Json)
+        header("Authorization", "Bearer $ACTIONS_TOKEN")
+        setBody(payload)
+    }
+
     private companion object {
         val CONVERSATION_ID = QualifiedId(
             id = UUID.randomUUID(),
@@ -338,6 +570,7 @@ class ApplicationTest {
         const val DUMMY_EVENT = "pull_request"
         const val DUMMY_SIGNATURE = "dummySignature"
         const val DUMMY_TEMPLATE = "dummyTemplate"
+        const val ACTIONS_TOKEN = "actions-token"
         val DUMMY_PAYLOAD = """
             {
                 "action": "created",

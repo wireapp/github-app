@@ -8,8 +8,6 @@
  */
 package com.wire.github.util
 
-import java.util.UUID
-
 /**
  * Host Port to be used when setting up Ktor server.
  */
@@ -43,18 +41,6 @@ val ENV_VAR_REDIS_URL: String = System
         "GHAPP_REDIS_URL",
         "redis://localhost:6379"
     )
-
-/**
- * Application ID received when Onboarding the App.
- */
-val ENV_VAR_APPLICATION_ID: UUID = UUID.fromString(
-    System
-        .getenv()
-        .getOrDefault(
-            "WIRE_SDK_APP_ID",
-            UUID.randomUUID().toString()
-        )
-)
 
 /**
  * API Token received when Onboarding the App.
