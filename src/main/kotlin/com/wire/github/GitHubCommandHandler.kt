@@ -49,7 +49,7 @@ internal class GitHubCommandHandler(
             "1. Open **Settings / Secrets and Variables / Actions / New repository secret\n" +
             "1.1 Store this URL as `WIRE_WEBHOOK_URL`: $actionsUrl\n" +
             "1.2 Store this token as `WIRE_ACTIONS_TOKEN`: " +
-            "${getOrCreateActionsToken(conversationId)}\n\n" +
+            "`${getOrCreateActionsToken(conversationId)}`\n\n" +
             "2. Use the reusable action into your `.yml`/`.yaml` files:\n\n" +
             "```yaml\n" +
             "uses: wireapp/github-app/.github/actions/notify-wire@v1\n" +
