@@ -50,10 +50,8 @@ class EventsHandler : WireEventsHandlerSuspending() {
                 "conversationId: ${conversation.id}"
         )
         usageMetrics.onAppAddedToConversation()
-        val webhookSetup = commandHandler.webhookHelp(conversationId = conversation.id)
         val message = buildString {
             appendLine(WELCOME_TEXT)
-            appendLine(webhookSetup)
             appendLine()
             append("Use `${GitHubCommandHandler.HELP_COMMAND}` to see all available commands.")
         }
