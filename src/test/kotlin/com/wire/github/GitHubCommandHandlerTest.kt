@@ -28,45 +28,9 @@ class GitHubCommandHandlerTest {
     fun `help lists all available commands`() {
         val response = handler.response("/GITHUB HELP", CONVERSATION_ID)
 
-        assertContains(response.orEmpty(), GitHubCommandHandler.TOKENS_COMMAND)
         assertContains(response.orEmpty(), GitHubCommandHandler.WEBHOOK_HELP_COMMAND)
         assertContains(response.orEmpty(), GitHubCommandHandler.ACTIONS_HELP_COMMAND)
         verify(exactly = 1) { usageMetrics.onHelpCommand() }
-    }
-
-    @Test
-    fun `tokens returns existing webhook secret and Actions token`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey()) } returns EXISTING_SECRET
-        every {
-            storage.get(CONVERSATION_ID.toActionsTokenStorageKey())
-        } returns EXISTING_ACTIONS_TOKEN
-
-        val response = handler.response(GitHubCommandHandler.TOKENS_COMMAND, CONVERSATION_ID)
-
-        assertContains(response.orEmpty(), EXISTING_SECRET)
-        assertContains(response.orEmpty(), EXISTING_ACTIONS_TOKEN)
-        verify(exactly = 0) { storage.set(any(), any()) }
-        verify(exactly = 0) { usageMetrics.onHelpCommand() }
-    }
-
-    @Test
-    fun `tokens creates and stores both credentials when they are missing`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey()) } returns null
-        every { storage.set(CONVERSATION_ID.toStorageKey(), GENERATED_SECRET) } returns "OK"
-        every { storage.get(CONVERSATION_ID.toActionsTokenStorageKey()) } returns null
-        every {
-            storage.set(CONVERSATION_ID.toActionsTokenStorageKey(), GENERATED_ACTIONS_TOKEN)
-        } returns "OK"
-
-        val response = handler.response(GitHubCommandHandler.TOKENS_COMMAND, CONVERSATION_ID)
-
-        assertContains(response.orEmpty(), GENERATED_SECRET)
-        assertContains(response.orEmpty(), GENERATED_ACTIONS_TOKEN)
-        verify(exactly = 1) { storage.set(CONVERSATION_ID.toStorageKey(), GENERATED_SECRET) }
-        verify(exactly = 1) {
-            storage.set(CONVERSATION_ID.toActionsTokenStorageKey(), GENERATED_ACTIONS_TOKEN)
-        }
-        verify(exactly = 0) { usageMetrics.onHelpCommand() }
     }
 
     @Test
