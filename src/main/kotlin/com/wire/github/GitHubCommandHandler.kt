@@ -22,7 +22,6 @@ internal class GitHubCommandHandler(
     ): String? =
         when (command.lowercase()) {
             HELP_COMMAND -> trackedHelp(help())
-            TOKENS_COMMAND -> tokens(conversationId)
             WEBHOOK_HELP_COMMAND -> trackedHelp(webhookHelp(conversationId))
             ACTIONS_HELP_COMMAND -> trackedHelp(actionsHelp(conversationId))
             else -> null
@@ -30,16 +29,7 @@ internal class GitHubCommandHandler(
 
     fun help(): String =
         "GitHub App supports repository webhooks and workflow-authored Actions notifications.\n\n" +
-            "Available commands:\n" +
-            "- `$TOKENS_COMMAND` — show or create this conversation's credentials\n" +
-            "- `$WEBHOOK_HELP_COMMAND` — configure GitHub repository webhooks\n" +
-            "- `$ACTIONS_HELP_COMMAND` — send custom messages from GitHub Actions"
-
-    private fun tokens(conversationId: QualifiedId): String =
-        "Conversation credentials:\n\n" +
-            "GitHub webhook secret:\n`${getOrCreateSecret(conversationId)}`\n\n" +
-            "GitHub Actions token:\n`${getOrCreateActionsToken(conversationId)}`\n\n" +
-            "Store these values as secrets. Do not print them in workflow logs."
+            HELP_COMMANDS
 
     fun webhookHelp(conversationId: QualifiedId): String {
         val webhookUrl = "$normalizedHost/${conversationId.id}/${conversationId.domain}"
@@ -56,10 +46,11 @@ internal class GitHubCommandHandler(
     private fun actionsHelp(conversationId: QualifiedId): String {
         val actionsUrl = "$normalizedHost/actions/${conversationId.id}/${conversationId.domain}"
         return "GitHub Actions notification setup:\n\n" +
-            "Store this URL as `WIRE_WEBHOOK_URL`:\n$actionsUrl\n\n" +
-            "Store this token as `WIRE_ACTIONS_TOKEN`:\n" +
-            "${getOrCreateActionsToken(conversationId)}\n\n" +
-            "Use the reusable action:\n\n" +
+            "1. Open **Settings / Secrets and Variables / Actions / New repository secret**\n" +
+            "1.1 Store this URL as **WIRE_WEBHOOK_URL**:\n$actionsUrl\n" +
+            "1.2 Store this token as **WIRE_ACTIONS_TOKEN**:\n" +
+            "`${getOrCreateActionsToken(conversationId)}`\n\n" +
+            "2. Use the reusable action into your **.yml**/**.yaml** files:\n\n" +
             "```yaml\n" +
             "uses: wireapp/github-app/.github/actions/notify-wire@v1\n" +
             "with:\n" +
@@ -88,8 +79,12 @@ internal class GitHubCommandHandler(
 
     companion object {
         const val HELP_COMMAND = "/github help"
-        const val TOKENS_COMMAND = "/github tokens"
         const val WEBHOOK_HELP_COMMAND = "/github webhook help"
         const val ACTIONS_HELP_COMMAND = "/github actions help"
+        const val HELP_COMMANDS =
+            "Available commands:\n" +
+                "- `$WEBHOOK_HELP_COMMAND` - configure GitHub repository webhooks\n" +
+                "- `$ACTIONS_HELP_COMMAND` - send custom messages from GitHub Actions\n" +
+                "- `$HELP_COMMAND` - Show this help message"
     }
 }
