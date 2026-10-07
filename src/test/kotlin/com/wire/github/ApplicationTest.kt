@@ -17,7 +17,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.server.testing.testApplication
 import kotlin.test.Test
 import kotlin.test.assertTrue
-import org.junit.jupiter.api.Assertions.assertEquals
+import kotlin.test.assertEquals
 import io.ktor.client.request.header
 import io.lettuce.core.RedisClient
 import io.lettuce.core.api.StatefulRedisConnection
