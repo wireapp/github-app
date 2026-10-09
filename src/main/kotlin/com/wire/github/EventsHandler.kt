@@ -5,16 +5,15 @@ import com.wire.sdk.WireEventsHandlerSuspending
 import com.wire.sdk.model.Conversation
 import com.wire.sdk.model.ConversationMember
 import com.wire.sdk.model.WireMessage
-import io.lettuce.core.api.StatefulRedisConnection
 import org.koin.core.context.GlobalContext
 import org.slf4j.LoggerFactory
 
 class EventsHandler : WireEventsHandlerSuspending() {
     private val logger = LoggerFactory.getLogger(this::class.java)
-    private val redisConnection = GlobalContext.get().get<StatefulRedisConnection<String, String>>()
+    private val redisRepository = GlobalContext.get().get<RedisRepository>()
     private val usageMetrics = GlobalContext.get().get<UsageMetrics>()
     private val commandHandler = GitHubCommandHandler(
-        storage = redisConnection.sync(),
+        redisRepository = redisRepository,
         usageMetrics = usageMetrics
     )
 
