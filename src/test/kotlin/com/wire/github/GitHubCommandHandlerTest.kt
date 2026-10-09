@@ -1,10 +1,7 @@
 package com.wire.github
 
 import com.wire.github.metrics.UsageMetrics
-import com.wire.github.util.toActionsTokenStorageKey
-import com.wire.github.util.toStorageKey
 import com.wire.sdk.model.QualifiedId
-import io.lettuce.core.api.sync.RedisCommands
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -14,10 +11,10 @@ import kotlin.test.assertContains
 import kotlin.test.assertNull
 
 class GitHubCommandHandlerTest {
-    private val storage = mockk<RedisCommands<String, String>>()
+    private val redisRepository = mockk<RedisRepository>()
     private val usageMetrics = mockk<UsageMetrics>(relaxed = true)
     private val handler = GitHubCommandHandler(
-        storage = storage,
+        redisRepository = redisRepository,
         usageMetrics = usageMetrics,
         host = "https://github-app.example.com/",
         generateSecret = { GENERATED_SECRET },
@@ -35,7 +32,7 @@ class GitHubCommandHandlerTest {
 
     @Test
     fun `webhook help includes webhook URL and token`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey()) } returns EXISTING_SECRET
+        every { redisRepository.getWebhookSecret(CONVERSATION_ID) } returns EXISTING_SECRET
 
         val response = handler.response(GitHubCommandHandler.WEBHOOK_HELP_COMMAND, CONVERSATION_ID)
 
@@ -50,7 +47,7 @@ class GitHubCommandHandlerTest {
     @Test
     fun `Actions help includes endpoint token and reusable action`() {
         every {
-            storage.get(CONVERSATION_ID.toActionsTokenStorageKey())
+            redisRepository.getActionSecret(CONVERSATION_ID)
         } returns EXISTING_ACTIONS_TOKEN
 
         val response = handler.response(GitHubCommandHandler.ACTIONS_HELP_COMMAND, CONVERSATION_ID)
@@ -68,11 +65,42 @@ class GitHubCommandHandlerTest {
 
     @Test
     fun `webhook setup generated for app onboarding is not counted as a help command`() {
-        every { storage.get(CONVERSATION_ID.toStorageKey()) } returns EXISTING_SECRET
+        every { redisRepository.getWebhookSecret(CONVERSATION_ID) } returns EXISTING_SECRET
 
         handler.webhookHelp(CONVERSATION_ID)
 
         verify(exactly = 0) { usageMetrics.onHelpCommand() }
+    }
+
+    @Test
+    fun `webhook help stores and returns a generated secret when none exists`() {
+        every { redisRepository.getWebhookSecret(CONVERSATION_ID) } returns null
+        every { redisRepository.setWebhookSecret(CONVERSATION_ID, GENERATED_SECRET) } returns Unit
+
+        val response = handler.webhookHelp(CONVERSATION_ID)
+
+        assertContains(response, GENERATED_SECRET)
+        verify(exactly = 1) {
+            redisRepository.setWebhookSecret(CONVERSATION_ID, GENERATED_SECRET)
+        }
+    }
+
+    @Test
+    fun `Actions help stores and returns a generated secret when none exists`() {
+        every { redisRepository.getActionSecret(CONVERSATION_ID) } returns null
+        every {
+            redisRepository.setActionSecret(
+                CONVERSATION_ID,
+                GENERATED_ACTIONS_TOKEN
+            )
+        } returns Unit
+
+        val response = handler.response(GitHubCommandHandler.ACTIONS_HELP_COMMAND, CONVERSATION_ID)
+
+        assertContains(response.orEmpty(), GENERATED_ACTIONS_TOKEN)
+        verify(exactly = 1) {
+            redisRepository.setActionSecret(CONVERSATION_ID, GENERATED_ACTIONS_TOKEN)
+        }
     }
 
     @Test

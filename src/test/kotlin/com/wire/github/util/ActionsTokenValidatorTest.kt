@@ -1,7 +1,7 @@
 package com.wire.github.util
 
+import com.wire.github.RedisRepository
 import com.wire.sdk.model.QualifiedId
-import io.lettuce.core.api.sync.RedisCommands
 import io.mockk.every
 import io.mockk.mockk
 import java.util.UUID
@@ -10,13 +10,13 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class ActionsTokenValidatorTest {
-    private val storage = mockk<RedisCommands<String, String>>()
-    private val validator = ActionsTokenValidator(storage)
+    private val redisRepository = mockk<RedisRepository>()
+    private val validator = ActionsTokenValidator(redisRepository)
 
     @Test
     fun `matching stored token is valid`() {
         every {
-            storage.get(ACTIONS_STORAGE_KEY)
+            redisRepository.getActionSecret(CONVERSATION_ID)
         } returns TOKEN
 
         assertTrue(validator.isValid(CONVERSATION_ID, TOKEN))
@@ -25,7 +25,7 @@ class ActionsTokenValidatorTest {
     @Test
     fun `wrong token is invalid`() {
         every {
-            storage.get(ACTIONS_STORAGE_KEY)
+            redisRepository.getActionSecret(CONVERSATION_ID)
         } returns TOKEN
 
         assertFalse(validator.isValid(CONVERSATION_ID, "wrong-token"))
@@ -34,7 +34,7 @@ class ActionsTokenValidatorTest {
     @Test
     fun `missing stored token is invalid`() {
         every {
-            storage.get(ACTIONS_STORAGE_KEY)
+            redisRepository.getActionSecret(CONVERSATION_ID)
         } returns null
 
         assertFalse(validator.isValid(CONVERSATION_ID, TOKEN))
@@ -45,8 +45,6 @@ class ActionsTokenValidatorTest {
             UUID.randomUUID(),
             "conversation.example.com"
         )
-        val ACTIONS_STORAGE_KEY =
-            "github-app:${CONVERSATION_ID.id}@${CONVERSATION_ID.domain}:actions-token"
         const val TOKEN = "actions-token"
     }
 }

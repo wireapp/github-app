@@ -19,9 +19,6 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.test.assertEquals
 import io.ktor.client.request.header
-import io.lettuce.core.RedisClient
-import io.lettuce.core.api.StatefulRedisConnection
-import io.lettuce.core.api.sync.RedisCommands
 import io.micrometer.prometheusmetrics.PrometheusConfig
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import io.mockk.every
@@ -40,22 +37,16 @@ import org.koin.dsl.module
 class ApplicationTest {
     @BeforeTest
     fun setupKoin() {
-        val mockRedisClient = mockk<RedisClient>()
-        val mockRedisCommands = mockk<RedisCommands<String, String>>()
-        val mockRedisConnection = mockk<StatefulRedisConnection<String, String>>()
+        val redisRepository = mockk<RedisRepository>()
         val mockWireAppSdk = mockk<WireAppSdk>(relaxed = true)
-
-        // Configure the Redis connection mock to return the sync commands
-        every { mockRedisConnection.sync() } returns mockRedisCommands
 
         startKoin {
             modules(
                 module {
-                    single { SignatureValidator() }
-                    single { ActionsTokenValidator(storage = mockRedisCommands) }
+                    single { redisRepository }
+                    single { SignatureValidator(redisRepository = redisRepository) }
+                    single { ActionsTokenValidator(redisRepository = redisRepository) }
                     single { TemplateHandler() }
-                    single { mockRedisClient }
-                    single<StatefulRedisConnection<String, String>> { mockRedisConnection }
                     single { mockWireAppSdk }
                     single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
                     single { UsageMetrics(registry = get<PrometheusMeterRegistry>()) }
