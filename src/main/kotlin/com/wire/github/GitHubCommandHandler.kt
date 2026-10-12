@@ -7,7 +7,7 @@ import com.wire.github.util.SessionIdentifierGenerator
 import com.wire.sdk.model.QualifiedId
 
 internal class GitHubCommandHandler(
-    private val redisRepository: RedisRepository,
+    private val redisService: RedisService,
     private val usageMetrics: UsageMetrics,
     private val host: String = ENV_VAR_HOST,
     private val generateSecret: () -> String = SessionIdentifierGenerator::generate,
@@ -61,15 +61,15 @@ internal class GitHubCommandHandler(
         response.also { usageMetrics.onHelpCommand() }
 
     private fun getOrCreateSecret(conversationId: QualifiedId): String =
-        redisRepository.getWebhookSecret(conversationId)
+        redisService.getWebhookSecret(conversationId)
             ?: generateSecret().also {
-                redisRepository.setWebhookSecret(conversationId, it)
+                redisService.setWebhookSecret(conversationId, it)
             }
 
     private fun getOrCreateActionsToken(conversationId: QualifiedId): String =
-        redisRepository.getActionSecret(conversationId)
+        redisService.getActionSecret(conversationId)
             ?: generateActionsToken().also {
-                redisRepository.setActionSecret(conversationId, it)
+                redisService.setActionSecret(conversationId, it)
             }
 
     private val normalizedHost: String

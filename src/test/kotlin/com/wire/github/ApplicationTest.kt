@@ -1,8 +1,6 @@
 package com.wire.github
 
 import com.wire.github.metrics.UsageMetrics
-import com.wire.github.util.ActionsTokenValidator
-import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
 import com.wire.sdk.model.QualifiedId
@@ -37,15 +35,13 @@ import org.koin.dsl.module
 class ApplicationTest {
     @BeforeTest
     fun setupKoin() {
-        val redisRepository = mockk<RedisRepository>()
+        val redisService = mockk<RedisService>()
         val mockWireAppSdk = mockk<WireAppSdk>(relaxed = true)
 
         startKoin {
             modules(
                 module {
-                    single { redisRepository }
-                    single { SignatureValidator(redisRepository = redisRepository) }
-                    single { ActionsTokenValidator(redisRepository = redisRepository) }
+                    single { redisService }
                     single { TemplateHandler() }
                     single { mockWireAppSdk }
                     single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
@@ -107,8 +103,8 @@ class ApplicationTest {
 
     @Test
     fun `given a delivery is rendered, when GET metrics, then funnel counters are set`() {
-        val signatureValidator = mockk<SignatureValidator>()
-        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+        val redisService = mockk<RedisService>()
+        every { redisService.isWebhookSignatureValid(any(), any(), any(), any()) } returns true
 
         val wireAppSdk = mockk<WireAppSdk>()
         every {
@@ -122,7 +118,7 @@ class ApplicationTest {
 
         loadKoinModules(
             module {
-                single { signatureValidator }
+                single { redisService }
                 single { wireAppSdk }
                 single { templateHandler }
             }
@@ -160,8 +156,8 @@ class ApplicationTest {
 
     @Test
     fun `given no template for the event, when GET metrics, then unsupported counter is exposed`() {
-        val signatureValidator = mockk<SignatureValidator>()
-        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+        val redisService = mockk<RedisService>()
+        every { redisService.isWebhookSignatureValid(any(), any(), any(), any()) } returns true
 
         val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
 
@@ -172,7 +168,7 @@ class ApplicationTest {
 
         loadKoinModules(
             module {
-                single { signatureValidator }
+                single { redisService }
                 single { wireAppSdk }
                 single { templateHandler }
             }
@@ -213,15 +209,9 @@ class ApplicationTest {
 
     @Test
     fun `given received event, when pull_request is created, then validations are passing`() {
-        val signatureValidator = mockk<SignatureValidator>()
+        val redisService = mockk<RedisService>()
         every {
-            signatureValidator.generateHmacSha1(
-                data = DUMMY_PAYLOAD,
-                secret = CONVERSATION_ID.id.toString()
-            )
-        } returns DUMMY_SIGNATURE
-        every {
-            signatureValidator.isValid(
+            redisService.isWebhookSignatureValid(
                 conversationId = CONVERSATION_ID.id.toString(),
                 conversationDomain = CONVERSATION_ID.domain,
                 signature = "sha1=$DUMMY_SIGNATURE",
@@ -246,7 +236,7 @@ class ApplicationTest {
 
         loadKoinModules(
             module {
-                single { signatureValidator }
+                single { redisService }
                 single { wireAppSdk }
                 single { templateHandler }
             }
@@ -257,20 +247,12 @@ class ApplicationTest {
                 configureRouting()
             }
 
-            val signature = String.format(
-                "sha1=%s",
-                signatureValidator.generateHmacSha1(
-                    data = DUMMY_PAYLOAD,
-                    secret = CONVERSATION_ID.id.toString()
-                )
-            )
-
             // Test the real route with mocked service
             val response = client.post("/${CONVERSATION_ID.id}/${CONVERSATION_ID.domain}") {
                 contentType(ContentType.Application.Json)
 
                 header("X-GitHub-Event", DUMMY_EVENT)
-                header("X-Hub-Signature", signature)
+                header("X-Hub-Signature", "sha1=$DUMMY_SIGNATURE")
                 header("X-GitHub-Delivery", "delivery")
 
                 setBody(DUMMY_PAYLOAD)
@@ -287,12 +269,12 @@ class ApplicationTest {
 
     @Test
     fun `given invalid signature, when webhook is posted, then forbidden without sending`() {
-        val signatureValidator = mockk<SignatureValidator>()
-        every { signatureValidator.isValid(any(), any(), any(), any()) } returns false
+        val redisService = mockk<RedisService>()
+        every { redisService.isWebhookSignatureValid(any(), any(), any(), any()) } returns false
         val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
         loadKoinModules(
             module {
-                single { signatureValidator }
+                single { redisService }
                 single { wireAppSdk }
             }
         )
@@ -316,12 +298,12 @@ class ApplicationTest {
 
     @Test
     fun `given malformed payload, when webhook is posted, then bad request without sending`() {
-        val signatureValidator = mockk<SignatureValidator>()
-        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+        val redisService = mockk<RedisService>()
+        every { redisService.isWebhookSignatureValid(any(), any(), any(), any()) } returns true
         val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
         loadKoinModules(
             module {
-                single { signatureValidator }
+                single { redisService }
                 single { wireAppSdk }
             }
         )
@@ -345,8 +327,8 @@ class ApplicationTest {
 
     @Test
     fun `given completed GitHub Actions events, when received, then messages are sent`() {
-        val signatureValidator = mockk<SignatureValidator>()
-        every { signatureValidator.isValid(any(), any(), any(), any()) } returns true
+        val redisService = mockk<RedisService>()
+        every { redisService.isWebhookSignatureValid(any(), any(), any(), any()) } returns true
 
         val wireAppSdk = mockk<WireAppSdk>()
         every {
@@ -355,7 +337,7 @@ class ApplicationTest {
 
         loadKoinModules(
             module {
-                single { signatureValidator }
+                single { redisService }
                 single { wireAppSdk }
             }
         )
@@ -385,7 +367,7 @@ class ApplicationTest {
 
     @Test
     fun `given valid bearer token, when Actions message is posted, then message is sent`() {
-        val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+        val (redisService, wireAppSdk) = loadActionsDependencies(tokenValid = true)
         val sentMessage = slot<WireMessage.Text>()
         every {
             wireAppSdk.getApplicationManager().sendMessage(message = capture(sentMessage))
@@ -404,7 +386,7 @@ class ApplicationTest {
             assertEquals(CONVERSATION_ID, sentMessage.captured.conversationId)
             assertEquals("CI failed", sentMessage.captured.text)
             verify(exactly = 1) {
-                actionsTokenValidator.isValid(CONVERSATION_ID, ACTIONS_TOKEN)
+                redisService.isActionsTokenValid(CONVERSATION_ID, ACTIONS_TOKEN)
             }
             verify(exactly = 1) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
         }
@@ -418,7 +400,7 @@ class ApplicationTest {
             "Bearer ",
             "Bearer token with-spaces"
         ).forEach { authorization ->
-            val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+            val (redisService, wireAppSdk) = loadActionsDependencies(tokenValid = true)
 
             testApplication {
                 application { configureRouting() }
@@ -432,7 +414,7 @@ class ApplicationTest {
 
                 assertEquals(HttpStatusCode.Unauthorized, response.status)
                 assertEquals("Bearer authorization is required", response.bodyAsText())
-                verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
+                verify(exactly = 0) { redisService.isActionsTokenValid(any(), any()) }
                 verify(exactly = 0) {
                     wireAppSdk.getApplicationManager().sendMessage(message = any())
                 }
@@ -490,7 +472,7 @@ class ApplicationTest {
 
     @Test
     fun `Actions message with non-json content type is unsupported`() {
-        val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+        val (redisService, wireAppSdk) = loadActionsDependencies(tokenValid = true)
 
         testApplication {
             application { configureRouting() }
@@ -504,7 +486,7 @@ class ApplicationTest {
 
             assertEquals(HttpStatusCode.UnsupportedMediaType, response.status)
             assertEquals("Content-Type must be application/json", response.bodyAsText())
-            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
+            verify(exactly = 0) { redisService.isActionsTokenValid(any(), any()) }
             verify(exactly = 0) {
                 wireAppSdk.getApplicationManager().sendMessage(message = any())
             }
@@ -513,7 +495,7 @@ class ApplicationTest {
 
     @Test
     fun `given invalid conversation ID, when Actions message is posted, then bad request`() {
-        val (actionsTokenValidator, wireAppSdk) = loadActionsDependencies(tokenValid = true)
+        val (redisService, wireAppSdk) = loadActionsDependencies(tokenValid = true)
 
         testApplication {
             application { configureRouting() }
@@ -525,24 +507,22 @@ class ApplicationTest {
 
             assertEquals(HttpStatusCode.BadRequest, response.status)
             assertEquals("Invalid conversation ID", response.bodyAsText())
-            verify(exactly = 0) { actionsTokenValidator.isValid(any(), any()) }
+            verify(exactly = 0) { redisService.isActionsTokenValid(any(), any()) }
             verify(exactly = 0) { wireAppSdk.getApplicationManager().sendMessage(message = any()) }
         }
     }
 
-    private fun loadActionsDependencies(
-        tokenValid: Boolean
-    ): Pair<ActionsTokenValidator, WireAppSdk> {
-        val actionsTokenValidator = mockk<ActionsTokenValidator>()
-        every { actionsTokenValidator.isValid(any(), any()) } returns tokenValid
+    private fun loadActionsDependencies(tokenValid: Boolean): Pair<RedisService, WireAppSdk> {
+        val redisService = mockk<RedisService>()
+        every { redisService.isActionsTokenValid(any(), any()) } returns tokenValid
         val wireAppSdk = mockk<WireAppSdk>(relaxed = true)
         loadKoinModules(
             module {
-                single { actionsTokenValidator }
+                single { redisService }
                 single { wireAppSdk }
             }
         )
-        return actionsTokenValidator to wireAppSdk
+        return redisService to wireAppSdk
     }
 
     private suspend fun io.ktor.client.HttpClient.postActionsMessage(

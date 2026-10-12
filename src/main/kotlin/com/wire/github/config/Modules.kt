@@ -1,14 +1,12 @@
 package com.wire.github.config
 
 import com.wire.github.EventsHandler
-import com.wire.github.RedisRepository
+import com.wire.github.RedisService
 import com.wire.github.metrics.UsageMetrics
-import com.wire.github.util.ActionsTokenValidator
 import com.wire.github.util.ENV_VAR_API_HOST
 import com.wire.github.util.ENV_VAR_API_TOKEN
 import com.wire.github.util.ENV_VAR_CRYPTOGRAPHY_STORAGE_KEY
 import com.wire.github.util.ENV_VAR_REDIS_URL
-import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
 import io.ktor.utils.io.core.toByteArray
@@ -24,12 +22,10 @@ val projectModules = module {
             startListening()
         }
     }
-    single { SignatureValidator(redisRepository = get()) }
-    single { ActionsTokenValidator(redisRepository = get()) }
     single { TemplateHandler() }
     single { RedisClient.create(ENV_VAR_REDIS_URL) }
     single<StatefulRedisConnection<String, String>> { get<RedisClient>().connect() }
-    single { RedisRepository(storage = get<StatefulRedisConnection<String, String>>().sync()) }
+    single { RedisService(storage = get<StatefulRedisConnection<String, String>>().sync()) }
     single { PrometheusMeterRegistry(PrometheusConfig.DEFAULT) }
     single { UsageMetrics(registry = get<PrometheusMeterRegistry>()) }
 }

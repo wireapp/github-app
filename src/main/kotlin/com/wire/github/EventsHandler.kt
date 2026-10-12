@@ -10,10 +10,10 @@ import org.slf4j.LoggerFactory
 
 class EventsHandler : WireEventsHandlerSuspending() {
     private val logger = LoggerFactory.getLogger(this::class.java)
-    private val redisRepository = GlobalContext.get().get<RedisRepository>()
+    private val redisService = GlobalContext.get().get<RedisService>()
     private val usageMetrics = GlobalContext.get().get<UsageMetrics>()
     private val commandHandler = GitHubCommandHandler(
-        redisRepository = redisRepository,
+        redisService = redisService,
         usageMetrics = usageMetrics
     )
 
