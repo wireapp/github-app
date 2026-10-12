@@ -3,9 +3,7 @@ package com.wire.github
 import com.wire.github.metrics.UsageMetrics
 import com.wire.github.request.model.ActionsNotificationRequest
 import com.wire.github.response.model.GitHubResponse
-import com.wire.github.util.ActionsTokenValidator
 import com.wire.github.util.KtxSerializer
-import com.wire.github.util.SignatureValidator
 import com.wire.github.util.TemplateHandler
 import com.wire.sdk.WireAppSdk
 import com.wire.sdk.model.QualifiedId
@@ -44,8 +42,7 @@ fun Application.configureRouting() {
     }
 
     val wireAppSdk = GlobalContext.get().get<WireAppSdk>()
-    val actionsTokenValidator = GlobalContext.get().get<ActionsTokenValidator>()
-    val signatureValidator = GlobalContext.get().get<SignatureValidator>()
+    val redisService = GlobalContext.get().get<RedisService>()
     val templateHandler = GlobalContext.get().get<TemplateHandler>()
     val usageMetrics = GlobalContext.get().get<UsageMetrics>()
 
@@ -86,7 +83,7 @@ fun Application.configureRouting() {
 
             // Validation of received signature
             val isSignatureValid = try {
-                signatureValidator.isValid(
+                redisService.isWebhookSignatureValid(
                     conversationId = conversationId,
                     conversationDomain = conversationDomain,
                     signature = signature,
@@ -156,7 +153,7 @@ fun Application.configureRouting() {
 
         configureActionsRoute(
             wireAppSdk = wireAppSdk,
-            actionsTokenValidator = actionsTokenValidator
+            redisService = redisService
         )
     }
 }
@@ -166,7 +163,7 @@ private const val PARAM_CONVERSATION_DOMAIN = "conversationDomain"
 
 private fun Route.configureActionsRoute(
     wireAppSdk: WireAppSdk,
-    actionsTokenValidator: ActionsTokenValidator
+    redisService: RedisService
 ) {
     post("/actions/{$PARAM_CONVERSATION_ID}/{$PARAM_CONVERSATION_DOMAIN}") {
         val conversationId = call.parameters[PARAM_CONVERSATION_ID]
@@ -199,7 +196,7 @@ private fun Route.configureActionsRoute(
                 "Bearer authorization is required"
             )
 
-        if (!actionsTokenValidator.isValid(qualifiedConversationId, bearerToken)) {
+        if (!redisService.isActionsTokenValid(qualifiedConversationId, bearerToken)) {
             application.log.warn(
                 "Invalid Actions token for conversation $conversationId@$conversationDomain"
             )

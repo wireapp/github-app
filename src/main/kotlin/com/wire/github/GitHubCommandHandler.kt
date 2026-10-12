@@ -4,13 +4,10 @@ import com.wire.github.metrics.UsageMetrics
 import com.wire.github.util.ENV_VAR_HOST
 import com.wire.github.util.ActionsTokenGenerator
 import com.wire.github.util.SessionIdentifierGenerator
-import com.wire.github.util.toActionsTokenStorageKey
-import com.wire.github.util.toStorageKey
 import com.wire.sdk.model.QualifiedId
-import io.lettuce.core.api.sync.RedisCommands
 
 internal class GitHubCommandHandler(
-    private val storage: RedisCommands<String, String>,
+    private val redisService: RedisService,
     private val usageMetrics: UsageMetrics,
     private val host: String = ENV_VAR_HOST,
     private val generateSecret: () -> String = SessionIdentifierGenerator::generate,
@@ -64,15 +61,16 @@ internal class GitHubCommandHandler(
         response.also { usageMetrics.onHelpCommand() }
 
     private fun getOrCreateSecret(conversationId: QualifiedId): String =
-        getOrCreate(conversationId.toStorageKey(), generateSecret)
+        redisService.getWebhookSecret(conversationId)
+            ?: generateSecret().also {
+                redisService.setWebhookSecret(conversationId, it)
+            }
 
     private fun getOrCreateActionsToken(conversationId: QualifiedId): String =
-        getOrCreate(conversationId.toActionsTokenStorageKey(), generateActionsToken)
-
-    private fun getOrCreate(
-        storageKey: String,
-        generate: () -> String
-    ): String = storage.get(storageKey) ?: generate().also { storage.set(storageKey, it) }
+        redisService.getActionSecret(conversationId)
+            ?: generateActionsToken().also {
+                redisService.setActionSecret(conversationId, it)
+            }
 
     private val normalizedHost: String
         get() = host.trimEnd('/')
