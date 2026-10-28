@@ -25,8 +25,16 @@ kotlin {
 
 repositories {
     mavenCentral()
-    maven {
-        url = uri("https://maven.wire.com/")
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Wire"
+                url = uri("https://maven.wire.com/")
+            }
+        }
+        filter {
+            includeGroup("com.wire")
+        }
     }
 }
 
