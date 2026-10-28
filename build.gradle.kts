@@ -33,7 +33,7 @@ repositories {
             }
         }
         filter {
-            includeGroup("com.wire")
+            includeModule("com.wire", "wire-apps-jvm-sdk")
         }
     }
 }
