@@ -25,6 +25,9 @@ kotlin {
 
 repositories {
     mavenCentral()
+    maven {
+        url = uri("https://maven.wire.com/")
+    }
 }
 
 application {
