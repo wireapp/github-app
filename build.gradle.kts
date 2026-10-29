@@ -25,6 +25,17 @@ kotlin {
 
 repositories {
     mavenCentral()
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = "Wire"
+                url = uri("https://maven.wire.com/")
+            }
+        }
+        filter {
+            includeModule("com.wire", "wire-apps-jvm-sdk")
+        }
+    }
 }
 
 application {
