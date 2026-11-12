@@ -2,20 +2,9 @@
 image:
   repository: quay.io/wire/github-app
   tag: "sha-c277d0f"
+# Served by Envoy Gateway, see cailleach targets/wire/apps-prod/integrations.
 ingress:
-  enabled: true
-  className: nginx
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-  hosts:
-  - host: github-app.apps-prod.wire.com
-    paths:
-    - path: /
-      pathType: Prefix
-  tls:
-  - hosts:
-    - github-app.apps-prod.wire.com
-    secretName: github-app-tls
+  enabled: false
 env:
 - name: WIRE_SDK_API_HOST
   value: "https://prod-nginz-https.wire.com"
